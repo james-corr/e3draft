@@ -1,0 +1,13 @@
+{
+  "_comment": "Copy this to config.json and fill in. config.json is gitignored — the API key never gets committed.",
+
+  "sheetId": "PASTE_THE_LONG_ID_FROM_THE_SHEET_URL_HERE",
+  "apiKey": "PASTE_YOUR_GOOGLE_CLOUD_API_KEY_HERE",
+  "tabName": "DRAFT BOARD",
+
+  "_pollMs": "How often to ask Google for new picks. 1500ms keeps us inside the 1-3 second target with room to spare.",
+  "pollMs": 1500,
+
+  "_source": "'sheet' reads the live Google Sheet. 'local' reads data/board.local.json instead, so the app runs with no API key — useful for testing before draft day.",
+  "source": "local"
+}

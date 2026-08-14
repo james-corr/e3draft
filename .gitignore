@@ -1,0 +1,19 @@
+# Secrets — the Google API key lives here. Never commit.
+config.json
+
+# Python venv used by the one-time xlsx extraction
+.venv/
+
+# macOS
+.DS_Store
+
+# Local design-hook consent (machine-specific)
+.impeccable/config.local.json
+.impeccable/hook.cache.json
+
+# Generated board tab (regenerate with tools/make-board-tab.mjs)
+out/
+
+# Build-time screenshots
+.impeccable/shots/
+.impeccable/questions/

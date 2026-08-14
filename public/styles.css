@@ -1,0 +1,1192 @@
+/* ==========================================================================
+   E3 Draft — Command Center
+   Camcorder viewfinder OSD. The instrument rails are the camera body and stay
+   letterbox black in both exposures; the scene between them is the image, and
+   it re-exposes. SUN is the default because the draft happens outdoors on a
+   laptop in bright sun, which is the one condition the interface must survive.
+   ========================================================================== */
+
+/* ------------------------------------------------------------------ fonts */
+
+@font-face {
+  font-family: "DSEG14";
+  src: url("/fonts/dseg14-bold.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: "DSEG14";
+  src: url("/fonts/dseg14-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Saira Condensed";
+  src: url("/fonts/saira-condensed-500.woff2") format("woff2");
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Saira Condensed";
+  src: url("/fonts/saira-condensed-600.woff2") format("woff2");
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Saira Condensed";
+  src: url("/fonts/saira-condensed-700.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
+}
+
+/* ------------------------------------------------------------------ tokens */
+
+:root {
+  /* Camera body — identical in both exposures. */
+  --rail: #0a0a0a;
+  --rail-ink: #ffffff;
+  --rail-dim: #8b9299;
+  --rail-line: #2a2f33;
+
+  --caution: #ffb000;
+  --caution-ink: #0a0a0a;
+
+  --font-seg: "DSEG14", ui-monospace, monospace;
+  --font-ui: "Saira Condensed", ui-sans-serif, system-ui, sans-serif;
+
+  --bracket: 14px;
+  --bracket-w: 2px;
+  --rail-h: 52px;
+  --gap: 10px;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* SUN — a viewfinder pointed at a sunlit subject. Bright image, dark OSD ink. */
+[data-exposure="sun"] {
+  --scene: #e4e6e9;
+  --scene-panel: #eef0f2;
+  --scene-sunk: #d7dade;
+  --ink: #0a0c0e;
+  --ink-dim: #52585e;
+  --hud: #b4babf;
+  --hud-soft: #c9ced2;
+  --alarm: #9a5b00;
+  --alarm-field: #f2e2c4;
+  --zebra-ink: #0a0c0e;
+  --zebra-gap: #f6f2e6;
+  --shadow: 0 1px 2px rgba(10, 12, 14, 0.1), 0 6px 18px rgba(10, 12, 14, 0.08);
+}
+
+/* NIGHT — the world as it ships. */
+[data-exposure="night"] {
+  --scene: #0a0a0a;
+  --scene-panel: #121417;
+  --scene-sunk: #17191d;
+  --ink: #ffffff;
+  --ink-dim: #858c93;
+  --hud: #2f353a;
+  --hud-soft: #23282c;
+  --alarm: #ffb000;
+  --alarm-field: #2a1f06;
+  --zebra-ink: #ffffff;
+  --zebra-gap: #0a0a0a;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 6px 18px rgba(0, 0, 0, 0.45);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--rail);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  line-height: 1.35;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--caution);
+  outline-offset: 2px;
+}
+
+.seg {
+  font-family: var(--font-seg);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+/* ------------------------------------------------------------------- frame */
+
+.vf {
+  display: grid;
+  /* Grid items default to min-width:auto, so without an explicit minmax(0,…)
+     column a wide child stretches the whole frame past the viewport. */
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: var(--rail-h) 1fr var(--rail-h);
+  height: 100vh;
+  height: 100dvh;
+}
+
+.rail {
+  background: var(--rail);
+  color: var(--rail-ink);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 18px;
+  border-block: 1px solid var(--rail-line);
+}
+
+.rail--top {
+  border-top: 0;
+}
+.rail--bottom {
+  border-bottom: 0;
+}
+
+.rail__group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.rail__group--center {
+  flex: 1;
+  justify-content: center;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.rail__sep {
+  width: 1px;
+  height: 20px;
+  background: var(--rail-line);
+}
+
+.readout {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--rail-dim);
+  white-space: nowrap;
+}
+
+.readout--stack {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.readout__k {
+  font-size: 10px;
+  color: var(--rail-dim);
+}
+
+.readout__v {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--rail-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.counter {
+  font-size: 15px;
+  color: var(--caution);
+  font-variant-numeric: tabular-nums;
+}
+
+.clock {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--rail-dim);
+}
+
+.clock__team {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The clock reads amber only when it is James's turn — the one moment that
+   outranks everything else on the screen. */
+.clock__team[data-me="true"] {
+  color: var(--caution);
+}
+
+/* -------------------------------------------------------------- REC lamp */
+
+.lamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.lamp .ico--dot {
+  width: 11px;
+  height: 11px;
+  fill: var(--caution);
+  stroke: none;
+}
+
+.lamp__text {
+  font-size: 12px;
+  color: var(--caution);
+}
+
+.lamp[data-state="live"] .ico--dot {
+  animation: pulse 2.4s var(--ease-out) infinite;
+}
+
+.lamp[data-state="stale"] .ico--dot,
+.lamp[data-state="stale"] .lamp__text {
+  fill: var(--rail-dim);
+  color: var(--rail-dim);
+  animation: none;
+}
+
+.lamp[data-state="error"] .ico--dot,
+.lamp[data-state="error"] .lamp__text {
+  fill: #ff5a3c;
+  color: #ff5a3c;
+  animation: none;
+}
+
+@keyframes pulse {
+  0%,
+  55%,
+  100% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 0.25;
+  }
+}
+
+/* ------------------------------------------------------------------ scene */
+
+.scene {
+  position: relative;
+  min-width: 0;
+  background-color: var(--scene);
+  /* HUD dot grid — 1px, the world's third material. */
+  background-image: radial-gradient(var(--hud-soft) 1px, transparent 1px);
+  background-size: 22px 22px;
+  padding: 16px;
+  overflow: hidden;
+  transition: background-color 0.35s var(--ease-out);
+}
+
+/* Corner focus brackets frame the whole image, as on a real viewfinder. */
+.bracket {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border: 0 solid var(--ink);
+  opacity: 0.55;
+  pointer-events: none;
+  z-index: 3;
+}
+.bracket--tl {
+  top: 8px;
+  left: 8px;
+  border-top-width: var(--bracket-w);
+  border-left-width: var(--bracket-w);
+}
+.bracket--tr {
+  top: 8px;
+  right: 8px;
+  border-top-width: var(--bracket-w);
+  border-right-width: var(--bracket-w);
+}
+.bracket--bl {
+  bottom: 8px;
+  left: 8px;
+  border-bottom-width: var(--bracket-w);
+  border-left-width: var(--bracket-w);
+}
+.bracket--br {
+  bottom: 8px;
+  right: 8px;
+  border-bottom-width: var(--bracket-w);
+  border-right-width: var(--bracket-w);
+}
+
+/* ------------------------------------------------------------------ views */
+
+.view {
+  display: none;
+  height: 100%;
+}
+
+[data-view="field"] .view--field {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: var(--gap);
+}
+
+[data-view="grid"] .view--grid,
+[data-view="player"] .view--player {
+  display: block;
+}
+
+.stack {
+  display: grid;
+  grid-template-rows: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: var(--gap);
+  min-height: 0;
+}
+
+/* ------------------------------------------------------------------ panel */
+
+.panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  background: var(--scene-panel);
+  border: 1px solid var(--hud);
+}
+
+/* Every framed region wears the bracket corners. Drawn with gradients so a
+   panel needs no extra elements. */
+.panel::before,
+.panel::after {
+  content: "";
+  position: absolute;
+  width: var(--bracket);
+  height: var(--bracket);
+  border: 0 solid var(--ink);
+  pointer-events: none;
+}
+.panel::before {
+  top: -1px;
+  left: -1px;
+  border-top-width: var(--bracket-w);
+  border-left-width: var(--bracket-w);
+}
+.panel::after {
+  bottom: -1px;
+  right: -1px;
+  border-bottom-width: var(--bracket-w);
+  border-right-width: var(--bracket-w);
+}
+
+.panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--hud);
+  flex: none;
+}
+
+/* The board's head carries a whole filter bar, so it stacks instead of
+   squeezing the title into two lines. */
+.panel--board .panel__head {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 7px;
+}
+
+.panel__title {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.panel__meta {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.panel__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--hud) transparent;
+}
+
+.panel__body--flush {
+  padding: 0;
+  overflow: auto;
+}
+
+/* --------------------------------------------------------- position bar */
+
+.posbar {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+}
+
+.posbar__btn {
+  font-family: var(--font-seg);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 6px;
+  color: var(--ink-dim);
+  border: 1px solid transparent;
+  line-height: 1;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.posbar__btn:hover {
+  color: var(--ink);
+  border-color: var(--hud);
+}
+
+.posbar__btn[aria-pressed="true"] {
+  color: var(--caution-ink);
+  background: var(--caution);
+  border-color: var(--caution);
+}
+
+[data-exposure="night"] .posbar__btn[aria-pressed="true"] {
+  color: #0a0a0a;
+}
+
+/* ------------------------------------------------------------ player row */
+
+.prow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  text-align: left;
+  border: 1px solid transparent;
+  transition: border-color 0.12s, background-color 0.12s;
+}
+
+.prow:hover {
+  background: var(--scene-sunk);
+  border-color: var(--hud);
+}
+
+.prow__main {
+  min-width: 0;
+}
+
+.prow__name {
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.prow__sub {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.prow__figs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+.fig {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.1;
+}
+
+.fig__k {
+  font-family: var(--font-seg);
+  font-size: 8px;
+  color: var(--ink-dim);
+}
+
+.fig__v {
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Focus lock — a starred target wears the closed bracket pair. */
+.lock {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  color: var(--ink-dim);
+  opacity: 0.5;
+  transition: opacity 0.15s, color 0.15s;
+}
+
+.prow:hover .lock {
+  opacity: 1;
+}
+
+.lock[aria-pressed="true"] {
+  opacity: 1;
+  color: var(--caution);
+}
+
+.lock .ico {
+  width: 15px;
+  height: 15px;
+}
+
+/* --------------------------------------------------------- tier banding */
+
+.tier {
+  margin-bottom: 6px;
+}
+
+.tier__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 8px 4px;
+  border-bottom: 1px solid var(--hud);
+}
+
+/* A tier running out is the scarcity alarm: heavier rule, amber, and zebra —
+   three cues, so it never depends on color alone. */
+.tier--thin .tier__head {
+  border-bottom: 2px solid var(--alarm);
+  background: var(--alarm-field);
+}
+
+.tier__label {
+  font-family: var(--font-seg);
+  font-size: 10px;
+  color: var(--ink-dim);
+}
+
+.tier--thin .tier__label {
+  color: var(--alarm);
+}
+
+.tier__count {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-dim);
+}
+
+.tier--thin .tier__count {
+  color: var(--alarm);
+}
+
+.tier__zebra {
+  display: none;
+  width: 34px;
+  height: 9px;
+}
+
+.tier--thin .tier__zebra {
+  display: block;
+  background: repeating-linear-gradient(
+    45deg,
+    var(--zebra-ink) 0 3px,
+    var(--zebra-gap) 3px 6px
+  );
+}
+
+/* ------------------------------------------------------------ plan cards */
+
+.plan {
+  border: 1px solid var(--hud);
+  margin-bottom: 8px;
+  background: var(--scene-panel);
+}
+
+.plan__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 9px;
+  border-bottom: 1px solid var(--hud);
+}
+
+.plan__name {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.plan__health {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+
+/* Exposure meter: how much of this plan is still on the board. */
+.meter {
+  width: 56px;
+  height: 8px;
+  background: var(--scene-sunk);
+  border: 1px solid var(--hud);
+  position: relative;
+}
+
+/* Scaled rather than resized: animating width would relayout on every poll. */
+.meter__fill {
+  position: absolute;
+  inset: 0;
+  transform-origin: left center;
+  background: var(--ink);
+  transition: transform 0.5s var(--ease-out);
+}
+
+.plan--dead .meter__fill {
+  background: var(--hud);
+}
+
+.plan--hot .meter__fill {
+  background: var(--caution);
+}
+
+.plan__pct {
+  font-family: var(--font-seg);
+  font-size: 10px;
+  min-width: 30px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.plan__body {
+  padding: 4px 0;
+}
+
+.ptarget {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 9px;
+  font-size: 13px;
+}
+
+.ptarget__rd {
+  font-family: var(--font-seg);
+  font-size: 9px;
+  color: var(--ink-dim);
+}
+
+.ptarget__name {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ptarget__at {
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-dim);
+}
+
+/* Taken targets are struck through and dimmed — gone from the frame. */
+.ptarget--taken .ptarget__name {
+  color: var(--ink-dim);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.ptarget--live .ptarget__name {
+  color: var(--ink);
+}
+
+.ptarget--live .ptarget__at {
+  color: var(--caution);
+}
+
+/* A written reminder, not a player. Set apart so it never reads as available. */
+.ptarget--note {
+  background: var(--scene-sunk);
+}
+
+.ptarget--note .ptarget__name {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.ptarget--note .ptarget__at {
+  font-family: var(--font-seg);
+  font-size: 9px;
+  color: var(--ink-dim);
+}
+
+/* ---------------------------------------------------------- my team grid */
+
+.slots {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+  gap: 4px;
+  padding: 4px 4px 10px;
+}
+
+.slot {
+  border: 1px solid var(--hud);
+  padding: 5px 6px;
+  text-align: center;
+}
+
+.slot--unfilled {
+  border-style: dashed;
+  color: var(--ink-dim);
+}
+
+.slot__k {
+  display: block;
+  font-family: var(--font-seg);
+  font-size: 9px;
+  color: var(--ink-dim);
+}
+
+.slot__v {
+  display: block;
+  font-size: 16px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.roster__row {
+  display: grid;
+  grid-template-columns: 26px 1fr auto;
+  gap: 8px;
+  align-items: baseline;
+  padding: 3px 8px;
+  font-size: 13px;
+}
+
+.roster__rd {
+  font-family: var(--font-seg);
+  font-size: 9px;
+  color: var(--ink-dim);
+}
+
+.roster__name {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.roster__pos {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--ink-dim);
+}
+
+/* ------------------------------------------------------ transaction log */
+
+.log__row {
+  display: grid;
+  grid-template-columns: 42px 1fr auto;
+  gap: 8px;
+  align-items: baseline;
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--hud-soft);
+}
+
+.log__row:last-child {
+  border-bottom: 0;
+}
+
+.log__at {
+  font-family: var(--font-seg);
+  font-size: 10px;
+  color: var(--caution);
+  font-variant-numeric: tabular-nums;
+}
+
+.log__name {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.log__team {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  white-space: nowrap;
+}
+
+/* The authored moment: a landing pick snaps its brackets closed, once. */
+.log__row--new {
+  animation: snap 0.55s var(--ease-out) 1;
+}
+
+@keyframes snap {
+  0% {
+    background: var(--caution);
+    color: var(--caution-ink);
+    clip-path: inset(0 0 0 0);
+    transform: scale(1.015);
+  }
+  100% {
+    background: transparent;
+    transform: scale(1);
+  }
+}
+
+/* -------------------------------------------------------------- the grid */
+
+.grid {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 12px;
+}
+
+.grid th,
+.grid td {
+  border: 1px solid var(--hud);
+  padding: 4px 6px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.grid thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--scene-panel);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.grid th[scope="row"] {
+  position: sticky;
+  left: 0;
+  background: var(--scene-panel);
+  font-family: var(--font-seg);
+  font-size: 10px;
+  color: var(--ink-dim);
+  text-align: center;
+  z-index: 1;
+}
+
+.grid td {
+  min-width: 108px;
+}
+
+.grid__name {
+  display: block;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.grid__pos {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--ink-dim);
+}
+
+.grid td.is-mine {
+  background: var(--alarm-field);
+  box-shadow: inset 2px 0 0 var(--caution);
+}
+
+.grid th.is-mine {
+  color: var(--caution);
+}
+
+.grid td.is-empty {
+  background: var(--scene-sunk);
+}
+
+/* ---------------------------------------------------------- zebra alert */
+
+/* `display` beats the hidden attribute, so restate it or the empty banner shows. */
+.zebra-alert[hidden] {
+  display: none;
+}
+
+.zebra-alert {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin-bottom: var(--gap);
+  border: 1px solid var(--alarm);
+  background: var(--alarm-field);
+}
+
+.zebra-alert__stripe {
+  width: 46px;
+  flex: none;
+  background: repeating-linear-gradient(
+    45deg,
+    var(--zebra-ink) 0 8px,
+    var(--zebra-gap) 8px 16px
+  );
+}
+
+.zebra-alert__body {
+  padding: 7px 12px;
+  min-width: 0;
+}
+
+.zebra-alert__title {
+  margin: 0 0 2px;
+  font-size: 11px;
+  color: var(--alarm);
+}
+
+.zebra-alert__text {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* --------------------------------------------------------------- zoom bar */
+
+.zoom {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.zoom__end {
+  font-size: 12px;
+  color: var(--rail-dim);
+}
+
+.zoom__track {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--rail-line);
+}
+
+.zoom__stop {
+  padding: 5px 16px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--rail-dim);
+  transition: color 0.15s, background-color 0.15s;
+}
+
+.zoom__stop:hover {
+  color: var(--rail-ink);
+}
+
+.zoom__stop[aria-selected="true"] {
+  background: var(--caution);
+  color: var(--caution-ink);
+}
+
+/* -------------------------------------------------------------- exposure */
+
+.exposure {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 11px;
+  border: 1px solid var(--rail-line);
+  color: var(--rail-ink);
+  transition: border-color 0.15s;
+}
+
+.exposure:hover {
+  border-color: var(--rail-dim);
+}
+
+.exposure .ico {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: var(--caution);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+.exposure__text {
+  font-size: 11px;
+  min-width: 38px;
+  text-align: left;
+}
+
+/* ---------------------------------------------------------------- states */
+
+.empty {
+  padding: 18px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-dim);
+  text-align: center;
+}
+
+/* ------------------------------------------------------------ responsive */
+
+@media (max-width: 1200px) {
+  [data-view="field"] .view--field {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  }
+  .stack {
+    display: none;
+  }
+}
+
+@media (max-width: 820px) {
+  body {
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  /* Rails wrap on a narrow screen, so their rows must size to content —
+     a fixed row height clips them instead. */
+  .vf {
+    grid-template-rows: auto 1fr auto;
+    height: auto;
+    min-height: 100dvh;
+  }
+
+  .rail {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 9px 12px;
+    gap: 8px 10px;
+  }
+
+  .rail__group--center {
+    order: -1;
+    flex-basis: 100%;
+    justify-content: flex-start;
+  }
+
+  /* Drop the readouts that are reference rather than decision material. */
+  #format,
+  #overall,
+  .rail__sep {
+    display: none;
+  }
+
+  .clock__team {
+    font-size: 18px;
+  }
+
+  [data-view="field"] .view--field {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .stack {
+    display: grid;
+    grid-template-rows: auto auto;
+  }
+
+  .scene {
+    overflow: visible;
+    padding: 12px 10px;
+  }
+
+  .panel__body {
+    max-height: 60vh;
+  }
+
+  .zoom {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .zoom__stop {
+    padding: 5px 10px;
+  }
+
+  /* Figures are the first thing to give up room when a name is long. */
+  .prow__figs {
+    gap: 6px;
+  }
+
+  .fig__v {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 420px) {
+  .zoom__end {
+    display: none;
+  }
+  .zoom__stop {
+    padding: 5px 8px;
+    letter-spacing: 0.06em;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

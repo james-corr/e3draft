@@ -1,0 +1,32 @@
+{
+  "season": 2025,
+  "teams": [
+    "Marconi",
+    "Krame",
+    "Brett",
+    "Beans",
+    "Mike",
+    "Greg",
+    "Bob",
+    "O'Malley",
+    "Bowe",
+    "Jimmy",
+    "Phils",
+    "Mo"
+  ],
+  "myTeam": "Jimmy",
+  "rounds": 20,
+  "snake": true,
+  "rosterObserved2025": {
+    "RB": 57,
+    "WR": 66,
+    "QB": 16,
+    "TE": 15,
+    "DST": 11,
+    "K": 11,
+    "S": 10
+  },
+  "rosterSlots": null,
+  "scoring": null,
+  "keepers": null
+}

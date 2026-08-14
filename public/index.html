@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>E3 Draft — Command Center</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><g stroke='%23ffb000' stroke-width='2.5' fill='none'><path d='M6 11V6h5M26 11V6h-5M6 21v5h5M26 21v5h-5'/></g><circle cx='16' cy='16' r='2.5' fill='%23fff'/></svg>" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body data-exposure="sun" data-view="field">
+    <!--
+      THESIS: A draft board framed like a camcorder viewfinder — the player pool is the
+      subject, the chrome is framing instrumentation. Refuses the dark neon draft-room
+      card queue every fantasy app ships.
+      OWN-WORLD: Letterbox-black instrument rails wrapping a scene that re-exposes between
+      SUN and NIGHT. White/black OSD ink, caution amber #FFB000, 45° zebra as the only
+      texture, 1px HUD dot grid, corner focus brackets on every framed region, DSEG14
+      segmented readouts, Saira Condensed for names.
+      STORY: James is on the clock. He reads scarcity, plan health, and what just went,
+      then picks — without hunting.
+      FIRST VIEWPORT: Top rail carries format + REC lamp + tape counter. Scene fills the
+      frame: ON THE BOARD (tier-banded available pool) left, PLANS center, MY TEAM and
+      TRANSACTIONS right. Bottom rail holds the W—T zoom bar; primary action is the zoom
+      stop plus star-to-target.
+      FORM: Camcorder viewfinder OSD, user-pinned over the assigned direction (grounded
+      candidate 3, agate sports page). Seed key 7cd0e59b.
+      FINISH: unreviewed and undocumented is unfinished; this build ends with the finish
+      review, the verdict, and DESIGN.md.
+    -->
+
+    <div class="vf">
+      <!-- ============================================================ top rail -->
+      <header class="rail rail--top">
+        <div class="rail__group">
+          <span class="lamp" id="lamp" data-state="live">
+            <svg class="ico ico--dot" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="4" /></svg>
+            <span class="lamp__text seg" id="lampText">REC</span>
+          </span>
+          <span class="rail__sep" aria-hidden="true"></span>
+          <span class="readout" id="format">E3 · 12T · 20R · HALF-PPR</span>
+        </div>
+
+        <div class="rail__group rail__group--center">
+          <span class="clock" id="clockLabel">ON THE CLOCK</span>
+          <strong class="clock__team" id="clockTeam">—</strong>
+        </div>
+
+        <div class="rail__group">
+          <span class="counter seg" id="counter" aria-label="Current round and pick">R00:P00</span>
+          <span class="rail__sep" aria-hidden="true"></span>
+          <span class="readout" id="overall">#000 / 240</span>
+        </div>
+      </header>
+
+      <!-- ================================================================ scene -->
+      <main class="scene" id="scene">
+        <span class="bracket bracket--tl" aria-hidden="true"></span>
+        <span class="bracket bracket--tr" aria-hidden="true"></span>
+        <span class="bracket bracket--bl" aria-hidden="true"></span>
+        <span class="bracket bracket--br" aria-hidden="true"></span>
+
+        <!-- Warning strip: unmatched picks. Zebra = blown out, the one error state. -->
+        <div class="zebra-alert" id="unmatched" hidden>
+          <div class="zebra-alert__stripe" aria-hidden="true"></div>
+          <div class="zebra-alert__body">
+            <h2 class="zebra-alert__title seg">CHECK SHEET</h2>
+            <p class="zebra-alert__text" id="unmatchedText"></p>
+          </div>
+        </div>
+
+        <!-- ---------------------------------------------------- VIEW: FIELD -->
+        <div class="view view--field" id="viewField">
+          <!-- ON THE BOARD ------------------------------------------------- -->
+          <section class="panel panel--board" aria-labelledby="h-board">
+            <div class="panel__head">
+              <h2 class="panel__title seg" id="h-board">ON THE BOARD</h2>
+              <div class="posbar" id="posbar" role="tablist" aria-label="Position filter"></div>
+            </div>
+            <div class="panel__body" id="boardList"></div>
+          </section>
+
+          <!-- PLANS -------------------------------------------------------- -->
+          <section class="panel panel--plans" aria-labelledby="h-plans">
+            <div class="panel__head">
+              <h2 class="panel__title seg" id="h-plans">PLANS</h2>
+              <span class="panel__meta" id="plansMeta"></span>
+            </div>
+            <div class="panel__body" id="plansList"></div>
+          </section>
+
+          <!-- MY TEAM + TRANSACTIONS --------------------------------------- -->
+          <div class="stack">
+            <section class="panel panel--team" aria-labelledby="h-team">
+              <div class="panel__head">
+                <h2 class="panel__title seg" id="h-team">MY TEAM</h2>
+                <span class="panel__meta" id="nextPick"></span>
+              </div>
+              <div class="panel__body" id="teamBody"></div>
+            </section>
+
+            <section class="panel panel--log" aria-labelledby="h-log">
+              <div class="panel__head">
+                <h2 class="panel__title seg" id="h-log">TRANSACTIONS</h2>
+              </div>
+              <div class="panel__body" id="logList"></div>
+            </section>
+          </div>
+        </div>
+
+        <!-- ---------------------------------------------------- VIEW: BOARD -->
+        <div class="view view--grid" id="viewGrid">
+          <section class="panel panel--grid" aria-labelledby="h-grid">
+            <div class="panel__head">
+              <h2 class="panel__title seg" id="h-grid">THE BOARD</h2>
+              <span class="panel__meta">20 rounds · snake</span>
+            </div>
+            <div class="panel__body panel__body--flush" id="gridBody"></div>
+          </section>
+        </div>
+
+        <!-- --------------------------------------------------- VIEW: PLAYER -->
+        <div class="view view--player" id="viewPlayer">
+          <section class="panel panel--player" aria-labelledby="h-player">
+            <div class="panel__head">
+              <h2 class="panel__title seg" id="h-player">TARGET</h2>
+              <span class="panel__meta">Starred players and watch tags</span>
+            </div>
+            <div class="panel__body" id="playerBody"></div>
+          </section>
+        </div>
+      </main>
+
+      <!-- ========================================================= bottom rail -->
+      <footer class="rail rail--bottom">
+        <div class="rail__group">
+          <span class="readout readout--stack">
+            <span class="readout__k seg">POOL</span>
+            <span class="readout__v" id="poolCount">—</span>
+          </span>
+          <span class="readout readout--stack">
+            <span class="readout__k seg">GONE</span>
+            <span class="readout__v" id="goneCount">—</span>
+          </span>
+        </div>
+
+        <div class="zoom" role="tablist" aria-label="Framing">
+          <span class="zoom__end seg" aria-hidden="true">W</span>
+          <div class="zoom__track" id="zoomTrack">
+            <button class="zoom__stop" role="tab" data-view="grid" aria-selected="false">
+              <span class="zoom__label">BOARD</span>
+            </button>
+            <button class="zoom__stop" role="tab" data-view="field" aria-selected="true">
+              <span class="zoom__label">FIELD</span>
+            </button>
+            <button class="zoom__stop" role="tab" data-view="player" aria-selected="false">
+              <span class="zoom__label">TARGET</span>
+            </button>
+          </div>
+          <span class="zoom__end seg" aria-hidden="true">T</span>
+        </div>
+
+        <div class="rail__group">
+          <button class="exposure" id="exposure" aria-pressed="false">
+            <svg class="ico" viewBox="0 0 20 20" aria-hidden="true">
+              <circle cx="10" cy="10" r="4" />
+              <path d="M10 1v2.5M10 16.5V19M1 10h2.5M16.5 10H19M3.6 3.6l1.8 1.8M14.6 14.6l1.8 1.8M16.4 3.6l-1.8 1.8M5.4 14.6l-1.8 1.8" />
+            </svg>
+            <span class="exposure__text seg" id="exposureText">SUN</span>
+          </button>
+        </div>
+      </footer>
+    </div>
+
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>
