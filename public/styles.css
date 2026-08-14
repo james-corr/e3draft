@@ -50,6 +50,9 @@
 
   --caution: #ffb000;
   --caution-ink: #0a0a0a;
+  /* Lost signal. Distinct from caution amber because it means the board cannot
+     be read at all, not that something needs attention. */
+  --rail-alert: #ff5a3c;
 
   --font-seg: "DSEG14", ui-monospace, monospace;
   --font-ui: "Saira Condensed", ui-sans-serif, system-ui, sans-serif;
@@ -75,7 +78,6 @@
   --alarm-field: #f2e2c4;
   --zebra-ink: #0a0c0e;
   --zebra-gap: #f6f2e6;
-  --shadow: 0 1px 2px rgba(10, 12, 14, 0.1), 0 6px 18px rgba(10, 12, 14, 0.08);
 }
 
 /* NIGHT — the world as it ships. */
@@ -91,7 +93,6 @@
   --alarm-field: #2a1f06;
   --zebra-ink: #ffffff;
   --zebra-gap: #0a0a0a;
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 6px 18px rgba(0, 0, 0, 0.45);
 }
 
 * {
@@ -209,7 +210,7 @@ button {
 }
 
 .readout__v {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--rail-ink);
   font-variant-numeric: tabular-nums;
@@ -314,8 +315,8 @@ button {
 
 .lamp[data-state="error"] .ico--dot,
 .lamp[data-state="error"] .lamp__text {
-  fill: #ff5a3c;
-  color: #ff5a3c;
+  fill: var(--rail-alert);
+  color: var(--rail-alert);
   animation: none;
 }
 
@@ -518,10 +519,6 @@ button {
   color: var(--caution-ink);
   background: var(--caution);
   border-color: var(--caution);
-}
-
-[data-exposure="night"] .posbar__btn[aria-pressed="true"] {
-  color: #0a0a0a;
 }
 
 /* ------------------------------------------------------------ player row */
@@ -1267,14 +1264,14 @@ button {
 
 .emptyframe__title {
   font-family: var(--font-seg);
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--ink);
 }
 
 .emptyframe__text {
   margin: 0;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--ink-dim);
 }
@@ -1325,7 +1322,7 @@ button {
   }
 
   .clock__team {
-    font-size: 18px;
+    font-size: 15px;
   }
 
   [data-view="field"] .view--field {

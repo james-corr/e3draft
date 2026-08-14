@@ -22,7 +22,7 @@
 
 ## Shipped
 
-- Design: camcorder-viewfinder world, SUN/NIGHT exposures, self-hosted DSEG14 + Saira Condensed, PRODUCT.md
+- Design: camcorder-viewfinder world, SUN/NIGHT exposures, self-hosted DSEG14 + Saira Condensed, recorded in PRODUCT.md and DESIGN.md; finish review closed with every finding resolved
 - Draft-day interface: board grid, tier-banded available pool, plan health, my team, transactions, target locking
 - Engine: taken/available, tier counts, rosters, snake pick order, plan health — 1.75ms per recompute
 - Name matcher: 216/216 real 2025 picks matched, unmatched picks surfaced rather than dropped
