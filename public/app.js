@@ -27,6 +27,11 @@ const el = {
   gridBody: $("gridBody"),
   playerBody: $("playerBody"),
   zoomTrack: $("zoomTrack"),
+  zoomFill: $("zoomFill"),
+  zoomMarker: $("zoomMarker"),
+  uptick: $("uptick"),
+  uptickV: $("uptickV"),
+  uptickAt: $("uptickAt"),
   exposure: $("exposure"),
   exposureText: $("exposureText"),
 };
@@ -35,6 +40,7 @@ const el = {
    closed bracket pair, not a star glyph. */
 const ICON = {
   lock: `<svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"><path d="M2 5.5V2h3.5M14 5.5V2h-3.5M2 10.5V14h3.5M14 10.5V14h-3.5"/></svg>`,
+  cross: `<svg class="emptyframe__cross" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M20 6v9M20 25v9M6 20h9M25 20h9"/><circle cx="20" cy="20" r="2.4"/></svg>`,
   locked: `<svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="square"><path d="M4 6.5V4h2.5M12 6.5V4h-2.5M4 9.5V12h2.5M12 9.5V12h-2.5"/><circle cx="8" cy="8" r="1.6" fill="currentColor" stroke="none"/></svg>`,
 };
 
@@ -95,8 +101,19 @@ function renderRails(payload) {
   el.nextPick.textContent = myNext
     ? myNext.picksAway === 0
       ? "on the clock"
-      : `next ${myNext.label} · ${myNext.picksAway} away`
+      : `next ${myNext.label}`
     : "no picks left";
+
+  if (myNext) {
+    const now = myNext.picksAway === 0;
+    el.uptick.dataset.now = String(now);
+    el.uptickV.textContent = now ? "NOW" : myNext.picksAway;
+    el.uptickAt.textContent = myNext.label;
+  } else {
+    el.uptick.dataset.now = "false";
+    el.uptickV.textContent = "--";
+    el.uptickAt.textContent = "DONE";
+  }
 }
 
 /* ------------------------------------------------- unmatched pick warning */
@@ -120,7 +137,16 @@ function renderUnmatched(s) {
 /* ------------------------------------------------------------ on the board */
 
 function renderPosbar(s) {
-  const positions = ["ALL", ...s.positionOrder.filter((p) => (s.available.byPosition[p] || []).length)];
+  const idp = new Set(s.idpPositions);
+  const has = (p) => (s.available.byPosition[p] || []).length;
+  // IDP is ranked on its own FantasyPros list — both scales start at rank 1 —
+  // so it gets its own group rather than being merged into the overall board.
+  const positions = [
+    "ALL",
+    ...s.positionOrder.filter((p) => !idp.has(p) && has(p)),
+    ...(s.positionOrder.some((p) => idp.has(p) && has(p)) ? ["IDP"] : []),
+    ...s.positionOrder.filter((p) => idp.has(p) && has(p)),
+  ];
   el.posbar.innerHTML = positions
     .map(
       (p) =>
@@ -132,57 +158,79 @@ function renderPosbar(s) {
 }
 
 function renderBoard(s) {
-  const positions =
-    activePos === "ALL"
-      ? s.positionOrder.filter((p) => (s.available.byPosition[p] || []).length)
-      : [activePos];
-
   const starred = new Set(s.inventory.filter((i) => i.starred).map((i) => i.id));
+
+  // FantasyPros tiers are overall within a list, not per-position, so ALL is
+  // one ranked run rather than position blocks stacked — stacking them buried
+  // the best back on the board under ten quarterbacks. But offence and IDP are
+  // two separate lists that both start at rank 1, so they never merge.
+  const idp = new Set(s.idpPositions);
+  const gather = (keep) => s.positionOrder.filter(keep).flatMap((p) => s.available.byPosition[p] || []);
+
+  const pool =
+    activePos === "ALL"
+      ? gather((p) => !idp.has(p))
+      : activePos === "IDP"
+        ? gather((p) => idp.has(p))
+        : (s.available.byPosition[activePos] || []).slice();
+
+  pool.sort((a, b) => (a.pros_rank ?? 9999) - (b.pros_rank ?? 9999));
+
+  // Tier counts for the whole pool when unfiltered, for one position otherwise.
+  const counts = new Map();
+  for (const p of pool) {
+    const t = p.pros_tier ?? "—";
+    counts.set(t, (counts.get(t) || 0) + 1);
+  }
+
+  const groups = new Map();
+  for (const p of pool.slice(0, 70)) {
+    const t = p.pros_tier ?? "—";
+    if (!groups.has(t)) groups.set(t, []);
+    groups.get(t).push(p);
+  }
+
   let html = "";
+  // Only the best remaining tier raises the scarcity alarm. A late tier down to
+  // one player is normal; the top tier running out is the cliff worth reaching.
+  let isFirstGroup = true;
 
-  for (const pos of positions) {
-    const players = (s.available.byPosition[pos] || []).slice(0, activePos === "ALL" ? 8 : 60);
-    if (!players.length) continue;
+  for (const [t, list] of groups) {
+    const remaining = counts.get(t) ?? list.length;
+    const thin = isFirstGroup && remaining <= 3;
+    isFirstGroup = false;
+    const scope =
+      activePos === "ALL" ? "TIER" : activePos === "IDP" ? "IDP TIER" : `${activePos} TIER`;
 
-    // Group by FantasyPros tier so the tier cliff is visible as a rule.
-    const groups = new Map();
-    for (const p of players) {
-      const t = p.pros_tier ?? "—";
-      if (!groups.has(t)) groups.set(t, []);
-      groups.get(t).push(p);
+    html += `<div class="tier${thin ? " tier--thin" : ""}">
+      <div class="tier__head">
+        <span class="tier__label">${esc(scope)} ${esc(t)}</span>
+        <span class="tier__zebra" aria-hidden="true"></span>
+        <span class="tier__count">${remaining}<span class="tier__count-k"> left</span></span>
+      </div>`;
+
+    for (const p of list) {
+      const on = starred.has(p.id);
+      html += `<div class="prow">
+        <span class="prow__main">
+          <span class="prow__name">${esc(p.name)}</span>
+          <span class="prow__sub">${esc(p.pos)} · ${esc(p.team ?? "—")} · BYE ${esc(p.bye ?? "—")}</span>
+        </span>
+        <span class="prow__figs">
+          ${
+            p.ffb_adp == null && p.ffb_tier == null
+              ? `<span class="fig"><span class="fig__k">RK</span><span class="fig__v">${esc(
+                  p.pos_rank_pros ?? p.pros_rank ?? "—"
+                )}</span></span>`
+              : `<span class="fig"><span class="fig__k">ADP</span><span class="fig__v">${adp(p.ffb_adp)}</span></span>
+                 <span class="fig"><span class="fig__k">FFB</span><span class="fig__v">${tier(p.ffb_tier)}</span></span>`
+          }
+          <button class="lock" data-star="${esc(p.id)}" aria-pressed="${on}"
+            aria-label="${on ? "Unstar" : "Star"} ${esc(p.name)}">${on ? ICON.locked : ICON.lock}</button>
+        </span>
+      </div>`;
     }
-
-    // Only the best remaining tier can raise the scarcity alarm. A late tier
-    // running down to one player is normal and means nothing; the top tier
-    // running down is the cliff worth reaching for.
-    let isFirstGroup = true;
-    for (const [t, list] of groups) {
-      const remaining = (s.tiers[pos]?.pros?.[t]) ?? list.length;
-      const thin = isFirstGroup && remaining <= 3;
-      isFirstGroup = false;
-      html += `<div class="tier${thin ? " tier--thin" : ""}">
-        <div class="tier__head">
-          <span class="tier__label">${esc(pos)} T${esc(t)}</span>
-          <span class="tier__zebra" aria-hidden="true"></span>
-          <span class="tier__count">${remaining} left</span>
-        </div>`;
-      for (const p of list) {
-        const on = starred.has(p.id);
-        html += `<div class="prow">
-          <span class="prow__main">
-            <span class="prow__name">${esc(p.name)}</span>
-            <span class="prow__sub">${esc(p.pos)} · ${esc(p.team ?? "—")} · BYE ${esc(p.bye ?? "—")}</span>
-          </span>
-          <span class="prow__figs">
-            <span class="fig"><span class="fig__k">ADP</span><span class="fig__v">${adp(p.ffb_adp)}</span></span>
-            <span class="fig"><span class="fig__k">FFB</span><span class="fig__v">${tier(p.ffb_tier)}</span></span>
-            <button class="lock" data-star="${esc(p.id)}" aria-pressed="${on}"
-              aria-label="${on ? "Unstar" : "Star"} ${esc(p.name)}">${on ? ICON.locked : ICON.lock}</button>
-          </span>
-        </div>`;
-      }
-      html += `</div>`;
-    }
+    html += `</div>`;
   }
 
   el.boardList.innerHTML = html || `<p class="empty">Nobody left at this position.</p>`;
@@ -320,7 +368,13 @@ function renderGrid(s) {
 
 function renderTargets(s) {
   if (!s.inventory.length) {
-    el.playerBody.innerHTML = `<p class="empty">No targets locked. Star a player from ON THE BOARD to track them here.</p>`;
+    el.playerBody.innerHTML = `<div class="emptyframe">
+      <div class="emptyframe__inner">
+        ${ICON.cross}
+        <span class="emptyframe__title">NO TARGET</span>
+        <p class="emptyframe__text">Lock a player from ON THE BOARD and they show up here with live taken status.</p>
+      </div>
+    </div>`;
     return;
   }
   el.playerBody.innerHTML = s.inventory
@@ -390,11 +444,19 @@ document.addEventListener("click", async (e) => {
   }
 });
 
+const ZOOM_ORDER = ["grid", "field", "player"];
+
 function setView(view) {
   el.body.dataset.view = view;
   for (const b of el.zoomTrack.querySelectorAll("[data-view]")) {
     b.setAttribute("aria-selected", String(b.dataset.view === view));
   }
+  // Framing runs wide (W, the whole board) to tight (T, one target), so the
+  // amber portion of the scale grows as the view narrows.
+  const stop = Math.max(0, ZOOM_ORDER.indexOf(view));
+  const pct = ((stop + 1) / ZOOM_ORDER.length) * 100;
+  el.zoomFill.style.clipPath = `inset(0 ${100 - pct}% 0 0)`;
+  el.zoomMarker.style.transform = `translateX(${pct}%)`;
 }
 
 el.zoomTrack.addEventListener("click", (e) => {
