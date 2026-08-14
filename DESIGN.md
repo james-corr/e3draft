@@ -8,6 +8,7 @@ colors:
   rail-line: "#2a2f33"
   caution: "#ffb000"
   caution-ink: "#0a0a0a"
+  rail-alert: "#ff5a3c"
   sun-scene: "#e4e6e9"
   sun-scene-panel: "#eef0f2"
   sun-scene-sunk: "#d7dade"
@@ -142,7 +143,7 @@ components:
 
 The interface is a camera pointed at a player pool. Everything black is the camera body; everything between the black bars is the image the camera is seeing. That split is the whole system and it is load-bearing: the top and bottom instrument rails hold format, REC lamp, tape counter, pick clock, pool counts, framing scale and exposure toggle, and they are letterbox black in every state. The scene between them carries the subject — the available pool, the plans, the roster, the transaction log — and it re-exposes.
 
-Density is instrument-panel dense and deliberately so. Type runs from 11px to 26px inside a single 100dvh frame with no page scroll; panels scroll internally instead. Nothing is decorative. There are exactly three materials — 45° zebra, a 1px HUD dot grid, and corner focus brackets — and each carries one meaning. Surfaces are square-cornered without exception (`0` radius everywhere) and separated by 1px HUD hairlines, not by shadow. The one shadow token defined is not applied to any component in the shipped stylesheet; depth is entirely tonal.
+Density is instrument-panel dense and deliberately so. Type runs from 11px to 26px inside a single 100dvh frame with no page scroll; panels scroll internally instead. Nothing is decorative. There are exactly three materials — 45° zebra, a 1px HUD dot grid, and corner focus brackets — and each carries one meaning. Surfaces are square-cornered without exception (`0` radius everywhere) and separated by 1px HUD hairlines, not by shadow. No shadow token exists in the system at all; depth is entirely tonal.
 
 Confirmed rejection: the dark neon draft-room card queue that every fantasy app ships. No card stacks, no glow, no gradient fills, no rounded pills.
 
@@ -166,6 +167,7 @@ Two neutral fields — a fixed black camera body and a scene that swaps between 
 - **OSD White** (`{colors.rail-ink}`): Primary rail text — the clock team, the countdown value, pool and gone counts.
 - **Rail Grey** (`{colors.rail-dim}`): Rail labels, keys, unselected framing stops, stale-lamp state.
 - **Rail Hairline** (`{colors.rail-line}`): Rail separators, the zoom track border and its tick array.
+- **Lost Signal** (`{colors.rail-alert}`): The REC lamp in its error state, and only there. It means the board cannot be read at all — a different class of message from caution amber, which means something needs attention. Never collapse the two.
 
 ### Neutral — Scene (re-exposes)
 - **Scene Field** (`{colors.sun-scene}` / `{colors.night-scene}`): The image ground, carrying the HUD dot grid.
@@ -221,7 +223,7 @@ Responsive behavior is triage, not reflow. Below 1200px the stacked roster/trans
 
 ## Elevation & Depth
 
-Flat by construction. A `--shadow` token is defined per exposure but is applied to no component in the shipped stylesheet; nothing in the interface is lifted off its ground. Depth is entirely tonal and linear: a three-step scene ramp (field → panel face → sunk) plus 1px HUD hairlines, with corner brackets standing in for the visual weight a shadow would otherwise carry. The single inset used anywhere is a 2px amber edge marking James's own column on the board grid.
+Flat by construction. No shadow token exists in the system; nothing in the interface is lifted off its ground. Depth is entirely tonal and linear: a three-step scene ramp (field → panel face → sunk) plus 1px HUD hairlines, with corner brackets standing in for the visual weight a shadow would otherwise carry. The single inset used anywhere is a 2px amber edge marking James's own column on the board grid.
 
 **The Flat Frame Rule.** Surfaces do not lift. If a new element needs to read as forward, move it up the tonal ramp or give it brackets — do not reach for a drop shadow.
 
@@ -293,6 +295,7 @@ Two registers. Inline empties are centered 13px/600 dim text. The TARGET empty i
 ### Don't:
 - **Don't** use amber for anything that is not caution — no amber headings, borders, links or decoration.
 - **Don't** use 45° zebra for anything but a blown-highlight warning (unmatched picks, the tier cliff).
+- **Don't** collapse Lost Signal into caution amber, or spend it anywhere but the lamp's error state. Two failures, two colors.
 - **Don't** introduce a fourth texture, a gradient fill, or a drop shadow. Depth is tonal.
 - **Don't** add corner radius. Every surface in this system is square.
 - **Don't** set type below 11px.

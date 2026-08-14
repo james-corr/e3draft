@@ -4,55 +4,458 @@
   "title": "Design System: E3 Draft — Command Center",
   "extensions": {
     "colorMeta": {
-      "rail": { "role": "neutral", "displayName": "Letterbox Black", "canonical": "#0a0a0a", "tonalRamp": ["#000000", "#0a0a0a", "#17191d", "#2a2f33", "#52585e", "#8b9299", "#b4babf", "#eef0f2"] },
-      "rail-ink": { "role": "neutral", "displayName": "OSD White", "canonical": "#ffffff", "tonalRamp": ["#17191d", "#2a2f33", "#52585e", "#8b9299", "#b4babf", "#d7dade", "#eef0f2", "#ffffff"] },
-      "rail-dim": { "role": "neutral", "displayName": "Rail Grey", "canonical": "#8b9299", "tonalRamp": ["#171a1c", "#252a2d", "#3a4145", "#52585e", "#6d757b", "#8b9299", "#b4babf", "#e4e6e9"] },
-      "rail-line": { "role": "neutral", "displayName": "Rail Hairline", "canonical": "#2a2f33", "tonalRamp": ["#0a0b0c", "#14171a", "#1f2326", "#2a2f33", "#3d4449", "#52585e", "#8b9299", "#c9ced2"] },
-      "caution": { "role": "primary", "displayName": "Caution Amber", "canonical": "#ffb000", "tonalRamp": ["#241900", "#3d2a00", "#5c4000", "#7a5500", "#9a5b00", "#c98a00", "#ffb000", "#ffd88a"] },
-      "caution-ink": { "role": "primary", "displayName": "Amber Ink", "canonical": "#0a0a0a", "tonalRamp": ["#000000", "#0a0a0a", "#17191d", "#2a2f33", "#52585e", "#8b9299", "#b4babf", "#eef0f2"] },
-      "sun-scene": { "role": "neutral", "displayName": "Sun Scene Field", "canonical": "#e4e6e9", "tonalRamp": ["#17191b", "#2a2d31", "#41464b", "#5c6268", "#8a9096", "#b4babf", "#d7dade", "#f4f5f7"] },
-      "sun-scene-panel": { "role": "neutral", "displayName": "Sun Panel Face", "canonical": "#eef0f2", "tonalRamp": ["#191b1d", "#2c2f33", "#44484d", "#5f656b", "#8d9399", "#b7bdc2", "#d9dce0", "#eef0f2"] },
-      "sun-scene-sunk": { "role": "neutral", "displayName": "Sun Sunk", "canonical": "#d7dade", "tonalRamp": ["#15171a", "#272a2e", "#3e4247", "#585e64", "#858b92", "#aeb4ba", "#d7dade", "#f0f2f4"] },
-      "sun-ink": { "role": "neutral", "displayName": "Sun Scene Ink", "canonical": "#0a0c0e", "tonalRamp": ["#0a0c0e", "#1a1e22", "#2d3237", "#43494f", "#5f666d", "#8a9199", "#b8bec4", "#e8eaed"] },
-      "sun-ink-dim": { "role": "neutral", "displayName": "Sun Ink Dim", "canonical": "#52585e", "tonalRamp": ["#0e1013", "#1d2124", "#2e3337", "#41474c", "#52585e", "#7d848b", "#a9b0b6", "#dde1e4"] },
-      "sun-hud": { "role": "neutral", "displayName": "Sun HUD Line", "canonical": "#b4babf", "tonalRamp": ["#131517", "#242729", "#383c40", "#4f5459", "#767c82", "#9aa1a7", "#b4babf", "#e6e8ea"] },
-      "sun-hud-soft": { "role": "neutral", "displayName": "Sun HUD Dot", "canonical": "#c9ced2", "tonalRamp": ["#141618", "#25282b", "#3a3e42", "#52575b", "#7a8085", "#a2a8ad", "#c9ced2", "#eceef0"] },
-      "sun-alarm": { "role": "primary", "displayName": "Burnt Signal", "canonical": "#9a5b00", "tonalRamp": ["#1f1200", "#331e00", "#4d2d00", "#663c00", "#9a5b00", "#c47700", "#f0a02a", "#f7d3a0"] },
-      "sun-alarm-field": { "role": "primary", "displayName": "Sun Alarm Field", "canonical": "#f2e2c4", "tonalRamp": ["#1e1809", "#332a12", "#4d3f1c", "#6b5828", "#a08a4e", "#cbb87f", "#f2e2c4", "#faf3e4"] },
-      "sun-zebra-gap": { "role": "neutral", "displayName": "Sun Zebra Gap", "canonical": "#f6f2e6", "tonalRamp": ["#1a180f", "#2e2b1b", "#464129", "#615b3a", "#918a60", "#c0b993", "#e2ddc6", "#f6f2e6"] },
-      "night-scene": { "role": "neutral", "displayName": "Night Scene Field", "canonical": "#0a0a0a", "tonalRamp": ["#000000", "#0a0a0a", "#17191d", "#23282c", "#2f353a", "#52585e", "#858c93", "#e4e6e9"] },
-      "night-scene-panel": { "role": "neutral", "displayName": "Night Panel Face", "canonical": "#121417", "tonalRamp": ["#000000", "#08090a", "#121417", "#1d2024", "#2a2e33", "#464c53", "#7d848b", "#d7dade"] },
-      "night-scene-sunk": { "role": "neutral", "displayName": "Night Sunk", "canonical": "#17191d", "tonalRamp": ["#000000", "#0b0c0e", "#17191d", "#23262b", "#31353b", "#4d525a", "#828993", "#dadde1"] },
-      "night-ink": { "role": "neutral", "displayName": "Night Scene Ink", "canonical": "#ffffff", "tonalRamp": ["#17191d", "#2a2f33", "#52585e", "#858c93", "#b4babf", "#d7dade", "#eef0f2", "#ffffff"] },
-      "night-ink-dim": { "role": "neutral", "displayName": "Night Ink Dim", "canonical": "#858c93", "tonalRamp": ["#14171a", "#22262a", "#353a3f", "#4d5359", "#6a7076", "#858c93", "#aeb4ba", "#e2e5e8"] },
-      "night-hud": { "role": "neutral", "displayName": "Night HUD Line", "canonical": "#2f353a", "tonalRamp": ["#0a0b0c", "#15181a", "#22262a", "#2f353a", "#454c53", "#5f676f", "#8d959d", "#d2d7dc"] },
-      "night-hud-soft": { "role": "neutral", "displayName": "Night HUD Dot", "canonical": "#23282c", "tonalRamp": ["#08090a", "#111315", "#1a1d20", "#23282c", "#343a40", "#4d545b", "#7c848c", "#c8ced4"] },
-      "night-alarm-field": { "role": "primary", "displayName": "Night Alarm Field", "canonical": "#2a1f06", "tonalRamp": ["#0d0900", "#1a1303", "#2a1f06", "#3d2d09", "#57400d", "#7d5d14", "#b8891f", "#f0c67a"] }
+      "rail": {
+        "role": "neutral",
+        "displayName": "Letterbox Black",
+        "canonical": "#0a0a0a",
+        "tonalRamp": [
+          "#000000",
+          "#0a0a0a",
+          "#17191d",
+          "#2a2f33",
+          "#52585e",
+          "#8b9299",
+          "#b4babf",
+          "#eef0f2"
+        ]
+      },
+      "rail-ink": {
+        "role": "neutral",
+        "displayName": "OSD White",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#17191d",
+          "#2a2f33",
+          "#52585e",
+          "#8b9299",
+          "#b4babf",
+          "#d7dade",
+          "#eef0f2",
+          "#ffffff"
+        ]
+      },
+      "rail-dim": {
+        "role": "neutral",
+        "displayName": "Rail Grey",
+        "canonical": "#8b9299",
+        "tonalRamp": [
+          "#171a1c",
+          "#252a2d",
+          "#3a4145",
+          "#52585e",
+          "#6d757b",
+          "#8b9299",
+          "#b4babf",
+          "#e4e6e9"
+        ]
+      },
+      "rail-line": {
+        "role": "neutral",
+        "displayName": "Rail Hairline",
+        "canonical": "#2a2f33",
+        "tonalRamp": [
+          "#0a0b0c",
+          "#14171a",
+          "#1f2326",
+          "#2a2f33",
+          "#3d4449",
+          "#52585e",
+          "#8b9299",
+          "#c9ced2"
+        ]
+      },
+      "caution": {
+        "role": "primary",
+        "displayName": "Caution Amber",
+        "canonical": "#ffb000",
+        "tonalRamp": [
+          "#241900",
+          "#3d2a00",
+          "#5c4000",
+          "#7a5500",
+          "#9a5b00",
+          "#c98a00",
+          "#ffb000",
+          "#ffd88a"
+        ]
+      },
+      "caution-ink": {
+        "role": "primary",
+        "displayName": "Amber Ink",
+        "canonical": "#0a0a0a",
+        "tonalRamp": [
+          "#000000",
+          "#0a0a0a",
+          "#17191d",
+          "#2a2f33",
+          "#52585e",
+          "#8b9299",
+          "#b4babf",
+          "#eef0f2"
+        ]
+      },
+      "rail-alert": {
+        "role": "tertiary",
+        "displayName": "Lost Signal",
+        "canonical": "#ff5a3c",
+        "tonalRamp": [
+          "#2b0d06",
+          "#4a170c",
+          "#6d2113",
+          "#93301e",
+          "#c1432b",
+          "#ff5a3c",
+          "#ff9179",
+          "#ffcdc2"
+        ]
+      },
+      "sun-scene": {
+        "role": "neutral",
+        "displayName": "Sun Scene Field",
+        "canonical": "#e4e6e9",
+        "tonalRamp": [
+          "#17191b",
+          "#2a2d31",
+          "#41464b",
+          "#5c6268",
+          "#8a9096",
+          "#b4babf",
+          "#d7dade",
+          "#f4f5f7"
+        ]
+      },
+      "sun-scene-panel": {
+        "role": "neutral",
+        "displayName": "Sun Panel Face",
+        "canonical": "#eef0f2",
+        "tonalRamp": [
+          "#191b1d",
+          "#2c2f33",
+          "#44484d",
+          "#5f656b",
+          "#8d9399",
+          "#b7bdc2",
+          "#d9dce0",
+          "#eef0f2"
+        ]
+      },
+      "sun-scene-sunk": {
+        "role": "neutral",
+        "displayName": "Sun Sunk",
+        "canonical": "#d7dade",
+        "tonalRamp": [
+          "#15171a",
+          "#272a2e",
+          "#3e4247",
+          "#585e64",
+          "#858b92",
+          "#aeb4ba",
+          "#d7dade",
+          "#f0f2f4"
+        ]
+      },
+      "sun-ink": {
+        "role": "neutral",
+        "displayName": "Sun Scene Ink",
+        "canonical": "#0a0c0e",
+        "tonalRamp": [
+          "#0a0c0e",
+          "#1a1e22",
+          "#2d3237",
+          "#43494f",
+          "#5f666d",
+          "#8a9199",
+          "#b8bec4",
+          "#e8eaed"
+        ]
+      },
+      "sun-ink-dim": {
+        "role": "neutral",
+        "displayName": "Sun Ink Dim",
+        "canonical": "#52585e",
+        "tonalRamp": [
+          "#0e1013",
+          "#1d2124",
+          "#2e3337",
+          "#41474c",
+          "#52585e",
+          "#7d848b",
+          "#a9b0b6",
+          "#dde1e4"
+        ]
+      },
+      "sun-hud": {
+        "role": "neutral",
+        "displayName": "Sun HUD Line",
+        "canonical": "#b4babf",
+        "tonalRamp": [
+          "#131517",
+          "#242729",
+          "#383c40",
+          "#4f5459",
+          "#767c82",
+          "#9aa1a7",
+          "#b4babf",
+          "#e6e8ea"
+        ]
+      },
+      "sun-hud-soft": {
+        "role": "neutral",
+        "displayName": "Sun HUD Dot",
+        "canonical": "#c9ced2",
+        "tonalRamp": [
+          "#141618",
+          "#25282b",
+          "#3a3e42",
+          "#52575b",
+          "#7a8085",
+          "#a2a8ad",
+          "#c9ced2",
+          "#eceef0"
+        ]
+      },
+      "sun-alarm": {
+        "role": "primary",
+        "displayName": "Burnt Signal",
+        "canonical": "#9a5b00",
+        "tonalRamp": [
+          "#1f1200",
+          "#331e00",
+          "#4d2d00",
+          "#663c00",
+          "#9a5b00",
+          "#c47700",
+          "#f0a02a",
+          "#f7d3a0"
+        ]
+      },
+      "sun-alarm-field": {
+        "role": "primary",
+        "displayName": "Sun Alarm Field",
+        "canonical": "#f2e2c4",
+        "tonalRamp": [
+          "#1e1809",
+          "#332a12",
+          "#4d3f1c",
+          "#6b5828",
+          "#a08a4e",
+          "#cbb87f",
+          "#f2e2c4",
+          "#faf3e4"
+        ]
+      },
+      "sun-zebra-gap": {
+        "role": "neutral",
+        "displayName": "Sun Zebra Gap",
+        "canonical": "#f6f2e6",
+        "tonalRamp": [
+          "#1a180f",
+          "#2e2b1b",
+          "#464129",
+          "#615b3a",
+          "#918a60",
+          "#c0b993",
+          "#e2ddc6",
+          "#f6f2e6"
+        ]
+      },
+      "night-scene": {
+        "role": "neutral",
+        "displayName": "Night Scene Field",
+        "canonical": "#0a0a0a",
+        "tonalRamp": [
+          "#000000",
+          "#0a0a0a",
+          "#17191d",
+          "#23282c",
+          "#2f353a",
+          "#52585e",
+          "#858c93",
+          "#e4e6e9"
+        ]
+      },
+      "night-scene-panel": {
+        "role": "neutral",
+        "displayName": "Night Panel Face",
+        "canonical": "#121417",
+        "tonalRamp": [
+          "#000000",
+          "#08090a",
+          "#121417",
+          "#1d2024",
+          "#2a2e33",
+          "#464c53",
+          "#7d848b",
+          "#d7dade"
+        ]
+      },
+      "night-scene-sunk": {
+        "role": "neutral",
+        "displayName": "Night Sunk",
+        "canonical": "#17191d",
+        "tonalRamp": [
+          "#000000",
+          "#0b0c0e",
+          "#17191d",
+          "#23262b",
+          "#31353b",
+          "#4d525a",
+          "#828993",
+          "#dadde1"
+        ]
+      },
+      "night-ink": {
+        "role": "neutral",
+        "displayName": "Night Scene Ink",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#17191d",
+          "#2a2f33",
+          "#52585e",
+          "#858c93",
+          "#b4babf",
+          "#d7dade",
+          "#eef0f2",
+          "#ffffff"
+        ]
+      },
+      "night-ink-dim": {
+        "role": "neutral",
+        "displayName": "Night Ink Dim",
+        "canonical": "#858c93",
+        "tonalRamp": [
+          "#14171a",
+          "#22262a",
+          "#353a3f",
+          "#4d5359",
+          "#6a7076",
+          "#858c93",
+          "#aeb4ba",
+          "#e2e5e8"
+        ]
+      },
+      "night-hud": {
+        "role": "neutral",
+        "displayName": "Night HUD Line",
+        "canonical": "#2f353a",
+        "tonalRamp": [
+          "#0a0b0c",
+          "#15181a",
+          "#22262a",
+          "#2f353a",
+          "#454c53",
+          "#5f676f",
+          "#8d959d",
+          "#d2d7dc"
+        ]
+      },
+      "night-hud-soft": {
+        "role": "neutral",
+        "displayName": "Night HUD Dot",
+        "canonical": "#23282c",
+        "tonalRamp": [
+          "#08090a",
+          "#111315",
+          "#1a1d20",
+          "#23282c",
+          "#343a40",
+          "#4d545b",
+          "#7c848c",
+          "#c8ced4"
+        ]
+      },
+      "night-alarm-field": {
+        "role": "primary",
+        "displayName": "Night Alarm Field",
+        "canonical": "#2a1f06",
+        "tonalRamp": [
+          "#0d0900",
+          "#1a1303",
+          "#2a1f06",
+          "#3d2d09",
+          "#57400d",
+          "#7d5d14",
+          "#b8891f",
+          "#f0c67a"
+        ]
+      }
     },
     "typographyMeta": {
-      "display": { "displayName": "Countdown", "purpose": "The 'YOU IN' pick countdown on the top rail. The single largest readout in the system; nothing else uses this size." },
-      "headline": { "displayName": "Clock Team", "purpose": "The on-the-clock team name. Amber when it is the user's turn." },
-      "title": { "displayName": "Panel Title", "purpose": "Segmented titles on every framed region, plus REC lamp, tape counter and exposure label." },
-      "body": { "displayName": "Player Name", "purpose": "Human names in the pool at 15px; secondary rows (plans, roster, log, grid) at 13px/600." },
-      "value": { "displayName": "Readout Value", "purpose": "Every measured number: ranks, ADP, tier counts, plan health, roster fill, pick labels." },
-      "label": { "displayName": "Field Key", "purpose": "Tracked condensed caps keys, panel meta, position filters, framing stops. 11px is the hard floor." }
+      "display": {
+        "displayName": "Countdown",
+        "purpose": "The 'YOU IN' pick countdown on the top rail. The single largest readout in the system; nothing else uses this size."
+      },
+      "headline": {
+        "displayName": "Clock Team",
+        "purpose": "The on-the-clock team name. Amber when it is the user's turn."
+      },
+      "title": {
+        "displayName": "Panel Title",
+        "purpose": "Segmented titles on every framed region, plus REC lamp, tape counter and exposure label."
+      },
+      "body": {
+        "displayName": "Player Name",
+        "purpose": "Human names in the pool at 15px; secondary rows (plans, roster, log, grid) at 13px/600."
+      },
+      "value": {
+        "displayName": "Readout Value",
+        "purpose": "Every measured number: ranks, ADP, tier counts, plan health, roster fill, pick labels."
+      },
+      "label": {
+        "displayName": "Field Key",
+        "purpose": "Tracked condensed caps keys, panel meta, position filters, framing stops. 11px is the hard floor."
+      }
     },
-    "shadows": [
-      { "name": "shadow-unused", "value": "0 1px 2px rgba(10,12,14,0.1), 0 6px 18px rgba(10,12,14,0.08)", "purpose": "Defined per exposure but applied to no component in the shipped stylesheet. The system is flat; depth is tonal. Do not adopt it without a review." }
-    ],
     "motion": [
-      { "name": "ease-out", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "The only easing curve in the system." },
-      { "name": "snap", "value": "0.55s ease-out, once", "purpose": "The one authored moment: a newly landed pick flashes amber and settles in TRANSACTIONS." },
-      { "name": "pulse", "value": "2.4s ease-out infinite (opacity 1 -> 0.25)", "purpose": "REC lamp, live state only. Stops on stale and error." },
-      { "name": "state-fast", "value": "0.12s–0.15s on color / border-color / background-color / opacity", "purpose": "Row hover, filter chips, lock, framing stop, exposure toggle." },
-      { "name": "zoom", "value": "0.32s ease-out on clip-path and transform", "purpose": "Framing fill and marker. Clipped and translated, never resized, so tick spacing stays constant." },
-      { "name": "expose", "value": "0.35s ease-out on background-color", "purpose": "The scene re-exposing between SUN and NIGHT." },
-      { "name": "meter", "value": "0.5s ease-out on transform", "purpose": "Plan health meter, scaled via scaleX so polling never relayouts." }
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "The only easing curve in the system."
+      },
+      {
+        "name": "snap",
+        "value": "0.55s ease-out, once",
+        "purpose": "The one authored moment: a newly landed pick flashes amber and settles in TRANSACTIONS."
+      },
+      {
+        "name": "pulse",
+        "value": "2.4s ease-out infinite (opacity 1 -> 0.25)",
+        "purpose": "REC lamp, live state only. Stops on stale and error."
+      },
+      {
+        "name": "state-fast",
+        "value": "0.12s–0.15s on color / border-color / background-color / opacity",
+        "purpose": "Row hover, filter chips, lock, framing stop, exposure toggle."
+      },
+      {
+        "name": "zoom",
+        "value": "0.32s ease-out on clip-path and transform",
+        "purpose": "Framing fill and marker. Clipped and translated, never resized, so tick spacing stays constant."
+      },
+      {
+        "name": "expose",
+        "value": "0.35s ease-out on background-color",
+        "purpose": "The scene re-exposing between SUN and NIGHT."
+      },
+      {
+        "name": "meter",
+        "value": "0.5s ease-out on transform",
+        "purpose": "Plan health meter, scaled via scaleX so polling never relayouts."
+      }
     ],
     "breakpoints": [
-      { "name": "wide", "value": "1200px" },
-      { "name": "narrow", "value": "820px" },
-      { "name": "tiny", "value": "420px" }
+      {
+        "name": "wide",
+        "value": "1200px"
+      },
+      {
+        "name": "narrow",
+        "value": "820px"
+      },
+      {
+        "name": "tiny",
+        "value": "420px"
+      }
     ]
   },
   "components": [
@@ -97,6 +500,14 @@
       "css": ".ds-exposure { display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px; background: #0a0a0a; border: 1px solid #2a2f33; border-radius: 0; color: #ffffff; cursor: pointer; transition: border-color 0.15s; } .ds-exposure:hover { border-color: #8b9299; } .ds-exposure:focus-visible { outline: 2px solid #ffb000; outline-offset: 2px; } .ds-exp-ico { width: 15px; height: 15px; fill: none; stroke: #ffb000; stroke-width: 1.5; stroke-linecap: round; } .ds-exp-text { font-family: var(--font-seg, \"DSEG14\", monospace); font-weight: 700; letter-spacing: 0.08em; font-size: 11px; min-width: 38px; text-align: left; }"
     },
     {
+      "name": "REC Lamp",
+      "kind": "custom",
+      "refersTo": "rail",
+      "description": "Feed status on the top rail. Amber and pulsing when live, rail grey when stale, Lost Signal red when the board can't be read at all.",
+      "html": "<span class=\"ds-lamp\" data-state=\"live\"><svg class=\"ds-lamp-dot\" viewBox=\"0 0 12 12\" aria-hidden=\"true\"><circle cx=\"6\" cy=\"6\" r=\"4\"/></svg><span class=\"ds-lamp-text\">REC</span></span>",
+      "css": ".ds-lamp { display: inline-flex; align-items: center; gap: 7px; background: #0a0a0a; padding: 6px 10px; } .ds-lamp-dot { width: 11px; height: 11px; fill: var(--caution, #ffb000); stroke: none; } .ds-lamp-text { font-family: var(--font-seg, \"DSEG14\", monospace); font-weight: 700; letter-spacing: 0.08em; font-size: 12px; color: var(--caution, #ffb000); } .ds-lamp[data-state=\"live\"] .ds-lamp-dot { animation: ds-pulse 2.4s cubic-bezier(0.16, 1, 0.3, 1) infinite; } .ds-lamp[data-state=\"stale\"] .ds-lamp-dot { fill: var(--rail-dim, #8b9299); animation: none; } .ds-lamp[data-state=\"stale\"] .ds-lamp-text { color: var(--rail-dim, #8b9299); } .ds-lamp[data-state=\"error\"] .ds-lamp-dot { fill: var(--rail-alert, #ff5a3c); animation: none; } .ds-lamp[data-state=\"error\"] .ds-lamp-text { color: var(--rail-alert, #ff5a3c); } @keyframes ds-pulse { 0%, 55%, 100% { opacity: 1; } 70% { opacity: 0.25; } }"
+    },
+    {
       "name": "Tier Band Head",
       "kind": "custom",
       "refersTo": "panel",
@@ -139,7 +550,7 @@
   ],
   "narrative": {
     "northStar": "The Viewfinder",
-    "overview": "The interface is a camera pointed at a player pool. Everything black is the camera body; everything between the black bars is the image the camera is seeing. That split is the whole system and it is load-bearing: the top and bottom instrument rails hold format, REC lamp, tape counter, pick clock, pool counts, framing scale and exposure toggle, and they are letterbox black in every state. The scene between them carries the subject — the available pool, the plans, the roster, the transaction log — and it re-exposes.\n\nDensity is instrument-panel dense and deliberately so. Type runs from 11px to 26px inside a single 100dvh frame with no page scroll; panels scroll internally instead. Nothing is decorative. There are exactly three materials — 45° zebra, a 1px HUD dot grid, and corner focus brackets — and each carries one meaning. Surfaces are square-cornered without exception (0 radius everywhere) and separated by 1px HUD hairlines, not by shadow. The one shadow token defined is not applied to any component in the shipped stylesheet; depth is entirely tonal.\n\nConfirmed rejection: the dark neon draft-room card queue that every fantasy app ships. No card stacks, no glow, no gradient fills, no rounded pills.",
+    "overview": "The interface is a camera pointed at a player pool. Everything black is the camera body; everything between the black bars is the image the camera is seeing. That split is the whole system and it is load-bearing: the top and bottom instrument rails hold format, REC lamp, tape counter, pick clock, pool counts, framing scale and exposure toggle, and they are letterbox black in every state. The scene between them carries the subject — the available pool, the plans, the roster, the transaction log — and it re-exposes.\n\nDensity is instrument-panel dense and deliberately so. Type runs from 11px to 26px inside a single 100dvh frame with no page scroll; panels scroll internally instead. Nothing is decorative. There are exactly three materials — 45° zebra, a 1px HUD dot grid, and corner focus brackets — and each carries one meaning. Surfaces are square-cornered without exception (0 radius everywhere) and separated by 1px HUD hairlines, not by shadow. No shadow token exists in the system at all; depth is entirely tonal.\n\nConfirmed rejection: the dark neon draft-room card queue that every fantasy app ships. No card stacks, no glow, no gradient fills, no rounded pills.",
     "keyCharacteristics": [
       "Two exposures, one chassis: rails never change, the scene does",
       "SUN (bright field, dark OSD ink) is the default; NIGHT is the shipped-world variant",
@@ -149,17 +560,61 @@
       "11px hard type floor and no information carried by color alone"
     ],
     "rules": [
-      { "name": "The Camera Body Rule", "body": "--rail, --rail-ink, --rail-dim, --rail-line, --caution and --caution-ink live on :root and are identical in both exposures. Only scene tokens live in the [data-exposure] blocks. A new rail element takes rail tokens; a new scene element takes scene tokens. Never move a rail token into an exposure block, and never paint a rail surface with a scene token.", "section": "colors" },
-      { "name": "The Caution-Only Rule", "body": "Amber marks scarcity, the clock, live targets and the current framing stop. If a proposed amber does not mean \"act on this now,\" it is the wrong color. Audit test: count the amber on screen — if it exceeds a handful of marks, something decorative got through.", "section": "colors" },
-      { "name": "The Sunlight Rule", "body": "SUN is the default exposure and a product constraint: the draft happens outdoors on a laptop. Any new scene color must clear contrast against the sun scene and panel grounds first, and amber must be substituted for the burnt-signal alarm on light ground.", "section": "colors" },
-      { "name": "The Three-Cue Rule", "body": "No state is signalled by color alone. A thinning tier carries a heavier 2px rule, an amber label and the zebra band; a taken target is dimmed and struck through; an unfilled roster slot is dashed and dimmed. Add a second and third non-color cue before adding a hue.", "section": "colors" },
-      { "name": "The Instrument-Face Rule", "body": "Segmented type is for titles and measurements; condensed type is for names and the small caps keys that label them. The inverse — instrument face on the labels, plain type on the numbers — reads as chrome bolted onto a table and is the specific failure this split corrects.", "section": "typography" },
-      { "name": "The Segment Air Rule", "body": "`.seg` carries letter-spacing: 0.08em and it is not negotiable. A 14-segment 1 is one vertical stroke, so 1.11 collapses into ambiguous bars at tighter tracking — and these characters carry decision values under a one-minute clock in daylight.", "section": "typography" },
-      { "name": "The 11px Floor Rule", "body": "No type below 11px anywhere in the system. Tracking, uppercase and tabular figures do the compression work that a smaller size would otherwise do.", "section": "typography" },
-      { "name": "The Flat Frame Rule", "body": "Surfaces do not lift. If a new element needs to read as forward, move it up the tonal ramp or give it brackets — do not reach for a drop shadow.", "section": "elevation" },
-      { "name": "The Four Corners Rule", "body": "Four bracket corners on every framed region. Two-corner crops read as an unfinished trim mark, not as framing.", "section": "shapes" },
-      { "name": "The Two-Texture Rule", "body": "The world has exactly three materials — 45° zebra (blown-highlight warning: unmatched picks and the tier cliff, nothing else), the 1px HUD dot grid on the scene ground (22px pitch), and corner brackets. Any new pattern, gradient or fill is out of world.", "section": "shapes" },
-      { "name": "The One Moment Rule", "body": "The system has exactly one authored motion: @keyframes snap, 0.55s, on a newly landed pick in TRANSACTIONS. Everything else is state transition. Expensive properties are refused: transitions run on transform, clip-path, color, border-color, background-color and opacity, never on a layout property.", "section": "components" }
+      {
+        "name": "The Camera Body Rule",
+        "body": "--rail, --rail-ink, --rail-dim, --rail-line, --caution and --caution-ink live on :root and are identical in both exposures. Only scene tokens live in the [data-exposure] blocks. A new rail element takes rail tokens; a new scene element takes scene tokens. Never move a rail token into an exposure block, and never paint a rail surface with a scene token.",
+        "section": "colors"
+      },
+      {
+        "name": "The Caution-Only Rule",
+        "body": "Amber marks scarcity, the clock, live targets and the current framing stop. If a proposed amber does not mean \"act on this now,\" it is the wrong color. Audit test: count the amber on screen — if it exceeds a handful of marks, something decorative got through.",
+        "section": "colors"
+      },
+      {
+        "name": "The Sunlight Rule",
+        "body": "SUN is the default exposure and a product constraint: the draft happens outdoors on a laptop. Any new scene color must clear contrast against the sun scene and panel grounds first, and amber must be substituted for the burnt-signal alarm on light ground.",
+        "section": "colors"
+      },
+      {
+        "name": "The Three-Cue Rule",
+        "body": "No state is signalled by color alone. A thinning tier carries a heavier 2px rule, an amber label and the zebra band; a taken target is dimmed and struck through; an unfilled roster slot is dashed and dimmed. Add a second and third non-color cue before adding a hue.",
+        "section": "colors"
+      },
+      {
+        "name": "The Instrument-Face Rule",
+        "body": "Segmented type is for titles and measurements; condensed type is for names and the small caps keys that label them. The inverse — instrument face on the labels, plain type on the numbers — reads as chrome bolted onto a table and is the specific failure this split corrects.",
+        "section": "typography"
+      },
+      {
+        "name": "The Segment Air Rule",
+        "body": "`.seg` carries letter-spacing: 0.08em and it is not negotiable. A 14-segment 1 is one vertical stroke, so 1.11 collapses into ambiguous bars at tighter tracking — and these characters carry decision values under a one-minute clock in daylight.",
+        "section": "typography"
+      },
+      {
+        "name": "The 11px Floor Rule",
+        "body": "No type below 11px anywhere in the system. Tracking, uppercase and tabular figures do the compression work that a smaller size would otherwise do.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Frame Rule",
+        "body": "Surfaces do not lift. If a new element needs to read as forward, move it up the tonal ramp or give it brackets — do not reach for a drop shadow.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Four Corners Rule",
+        "body": "Four bracket corners on every framed region. Two-corner crops read as an unfinished trim mark, not as framing.",
+        "section": "shapes"
+      },
+      {
+        "name": "The Two-Texture Rule",
+        "body": "The world has exactly three materials — 45° zebra (blown-highlight warning: unmatched picks and the tier cliff, nothing else), the 1px HUD dot grid on the scene ground (22px pitch), and corner brackets. Any new pattern, gradient or fill is out of world.",
+        "section": "shapes"
+      },
+      {
+        "name": "The One Moment Rule",
+        "body": "The system has exactly one authored motion: @keyframes snap, 0.55s, on a newly landed pick in TRANSACTIONS. Everything else is state transition. Expensive properties are refused: transitions run on transform, clip-path, color, border-color, background-color and opacity, never on a layout property.",
+        "section": "components"
+      }
     ],
     "dos": [
       "Do keep rail tokens on :root and scene tokens in the [data-exposure] blocks. The rails are the camera body; they do not re-expose.",
@@ -176,6 +631,7 @@
     "donts": [
       "Don't use amber for anything that is not caution — no amber headings, borders, links or decoration.",
       "Don't use 45° zebra for anything but a blown-highlight warning (unmatched picks, the tier cliff).",
+      "Don't collapse Lost Signal into caution amber, or spend it anywhere but the lamp's error state. Two failures, two colors.",
       "Don't introduce a fourth texture, a gradient fill, or a drop shadow. Depth is tonal.",
       "Don't add corner radius. Every surface in this system is square.",
       "Don't set type below 11px.",
