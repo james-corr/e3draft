@@ -1087,7 +1087,7 @@ button {
   position: relative;
   display: flex;
   align-items: stretch;
-  height: 30px;
+  height: 34px;
   width: clamp(280px, 34vw, 400px);
   border: 1px solid var(--rail-line);
 }
@@ -1156,7 +1156,14 @@ button {
   position: relative;
   z-index: 1;
   flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 0 4px;
+  /* Line-height 1 keeps the label box inside the clear channel between the
+     tick bands, so no label ever sits on top of the amber fill. Recolouring
+     the text instead would fail in the gaps between ticks. */
+  line-height: 1;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.1em;
@@ -1359,12 +1366,15 @@ button {
 }
 
 @media (max-width: 420px) {
+  .zoom {
+    gap: 6px;
+  }
   .zoom__end {
-    display: none;
+    font-size: 11px;
   }
   .zoom__stop {
-    padding: 5px 8px;
-    letter-spacing: 0.06em;
+    padding: 0 2px;
+    letter-spacing: 0.04em;
   }
 }
 
