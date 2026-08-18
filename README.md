@@ -25,11 +25,14 @@ There is nothing to install — no dependencies, no build step. Node 18 or newer
 |---|---|
 | `1` / `2` / `3` | Frame wide (the 20×12 board), field (the working view), or tight (your targets) |
 | `E` | Switch exposure between SUN and NIGHT |
+| `Esc` | Close whichever card is open |
 
 SUN is the default because the draft happens outdoors on a laptop in bright daylight. NIGHT is
 there for anywhere darker. The choice is remembered.
 
-Click the bracket icon on any player to lock them as a target; they show up under TARGET.
+Click the bracket icon on any player to lock them as a target; they show up under TARGET. Click
+the player's **name** instead and a focus card opens with everything known about him, plus the
+watch tags and a place to write why he's on your list.
 
 ## Reading the screen
 
@@ -43,6 +46,34 @@ Click the bracket icon on any player to lock them as a target; they show up unde
 - **PLANS** — your contingency branches. The meter is how much of that plan is still on the
   board, so you can see at a glance which strategy the draft has left intact. Struck-through
   names show the round.pick where they actually went.
+- **The cue strip** (just under the top rail) — your own note for the round in play, or the next
+  one coming. These are the margin notes from the old sheet: when the kicker run starts, where
+  the RB deadzone is. Every one of them also sits on its own round in the BOARD view.
+- **The watchlist chips** (under the position filter) — LOCKED plus whichever tags you've used.
+  Click one to narrow the board to just those players; click it again to clear. The count is how
+  many are still available, so a chip always promises what it shows.
+
+## Watch tags
+
+Five tags, carried over from the old sheet: **Breakout**, **Sleepers**, **Busts**, **Late Round
+Fliers**, **My Guys**. A tag and a lock are one record — a lock says *I want him*, a tag says
+*why* — so both are set from the same focus card, and both survive the yearly refresh.
+
+## Setup: writing the plans and notes
+
+Click the setup icon in the **PLANS** header. That opens the prep surface, where the contingency
+plans and round notes are edited directly — no JSON, no spreadsheet.
+
+- Name fields autocomplete against the real player pool.
+- Every target is checked against **the same matcher that reads the board on draft day**. A row
+  showing `WR · CIN` will be found; a row showing `NO MATCH — Bijan Robinson?` is a typo waiting
+  to happen. A row that matches nothing and looks nothing like anybody is treated as what it
+  usually is — a written reminder like `CHECK LATE ROUNDERS` — and marked `NOTE` rather than
+  flagged.
+- Wrap a note line in `***asterisks***` to make it shout on the cue strip.
+- Nothing is written until **SAVE**. The previous version is always kept beside it as
+  `data/branches.<year>.json.bak`, and rows missing a round or a name are dropped with a count
+  reported back rather than vanishing quietly.
 
 ## One-time setup: connecting the live board
 
@@ -89,7 +120,8 @@ This is the part that used to take an afternoon.
 1. Update team names and draft order in `data/league.json`.
 2. Drop in this year's FantasyPros consensus cheat sheet and Fantasy Footballers rankings as
    `data/players.<year>.json` (see `tools/extract_from_xlsx.py` for the shape).
-3. Clear the board tab and pre-fill any keepers.
+3. Rewrite the plans and round notes in **setup** (the icon in the PLANS header).
+4. Clear the board tab and pre-fill any keepers.
 
 No formulas to rewire, because there are no formulas.
 
@@ -121,7 +153,9 @@ frames what it is handed.
 | `lib/state.js` | The engine: taken/available, tiers, rosters, plan health |
 | `lib/players.js` | Player pool and the name matcher |
 | `lib/board.js` | Reads the sheet (or the local fixture) |
-| `lib/store.js` | Saves stars/tags to disk, atomically |
+| `lib/store.js` | Saves the watchlist and the plans to disk, atomically |
+| `public/app.js` | The viewfinder: renders whatever state the server sends |
+| `public/setup.js` | The prep surface: editing plans and round notes |
 | `public/` | The interface |
 | `data/` | Players, league config, contingency plans, saved targets |
 | `tools/` | The xlsx migration and the board-tab generator |
@@ -133,4 +167,5 @@ frames what it is handed.
 realistic mid-draft state. `51` puts you six picks away from being on the clock in round 5.
 
 Adding `?static=1` to the URL renders one snapshot without opening the live stream — useful for
-screenshots and debugging.
+screenshots and debugging. The URL also takes `?view=grid|field|player`, `?exposure=sun|night`,
+`?focus=<player id>` and `?setup=1`, so any particular screen can be linked to directly.

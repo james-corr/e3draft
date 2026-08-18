@@ -1,5 +1,5 @@
 ---
-Date last edited: 08_14_26
+Date last edited: 08_18_26
 Date created: 08_13_26
 ---
 
@@ -18,7 +18,7 @@ is one Google Sheet and one local app.
 
 The old setup took one to two hours to rebuild each year and couldn't keep up during the draft.
 
-## Current state (08_14_26) — built and running
+## Current state (08_18_26) — built and running
 
 The app works end to end against real data. `npm start` or double-click `Start Draft.command`,
 then <http://localhost:4173>.
@@ -33,6 +33,19 @@ then <http://localhost:4173>.
 contingency plans with health meters, my team, transactions log, target locking), the whole
 engine in `lib/`, the Google Sheets read path, a change-detecting poll loop pushing over SSE, the
 board-tab generator, and the migration off the old workbooks.
+
+**Added 08/18/26:**
+- **The watchlist is one system.** A focus card behind every player name holds the lock, the five
+  real tags (Breakout / Sleepers / Busts / Late Round Fliers / My Guys) and a note, all writing a
+  single record. Tag chips filter the board, counted over players still available.
+- **The round notes render.** Ten of James's own margin notes had been extracted since the
+  migration with nothing showing them. They now run as a cue strip for the round in play (or the
+  next one ahead) and as a band across their own round on the board.
+- **A setup surface.** Plans and round notes are edited in the app instead of by hand in JSON.
+  Names autocomplete against the pool and are checked by the same matcher that reads the board on
+  draft day; saves keep a `.bak` and report anything dropped. This is what makes "rewrite the 9
+  plans for this season" a job James can do himself.
+- Fixed a real one found while measuring: the page scrolled 44px sideways at phone widths.
 
 **What's not connected yet:** the live sheet. Until James does the one-time setup the app reads
 `data/board.local.json` — the complete 2025 draft as a fixture — so it behaves exactly as it
@@ -82,8 +95,10 @@ See `ROADMAP.md` for state and `PRODUCT.md` for the product record.
 
 ## What's left
 
-Top of `ROADMAP.md`: connect the live sheet, settle the keeper round rule, swap in this year's
-rankings, and rewrite the 9 plans for this season (they hold 2025's targets today).
+Top of `ROADMAP.md`, and all four need James rather than code: connect the live sheet, settle the
+keeper round rule, swap in this year's rankings, and rewrite the 9 plans and the round notes for
+this season (they hold 2025's targets today). The last one is now done in the app's setup surface
+— the icon in the PLANS header.
 
 ## Where things live
 
@@ -94,6 +109,8 @@ rankings, and rewrite the 9 plans for this season (they hold 2025's targets toda
 | House rules for working in here | `CLAUDE.md` |
 | State | `ROADMAP.md` |
 | The engine | `lib/state.js` |
+| The design system, as shipped | `DESIGN.md` |
+| Editing plans and round notes | the setup icon in the PLANS header |
 | The new shared-board tab | `node tools/make-board-tab.mjs` → `out/DRAFT BOARD.csv` |
 | Original workbooks | `E3 Draft 2025.xlsx`, `JPC USE - Draft 2025 - in use.xlsx` |
 | Earlier planning (superseded, kept for reasoning) | `plans/` |

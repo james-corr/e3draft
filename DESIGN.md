@@ -133,6 +133,43 @@ components:
     typography: "{typography.value}"
     rounded: "{rounded.none}"
     padding: "5px 6px"
+  tag-chip:
+    textColor: "{colors.sun-ink-dim}"
+    typography: "{typography.label}"
+    rounded: "{rounded.none}"
+    padding: "4px 6px"
+  tag-chip-pressed:
+    backgroundColor: "{colors.sun-ink}"
+    textColor: "{colors.sun-scene-panel}"
+  round-cue:
+    backgroundColor: "{colors.sun-scene-sunk}"
+    textColor: "{colors.sun-ink}"
+    rounded: "{rounded.none}"
+    padding: "6px 10px"
+  overlay-scrim:
+    backgroundColor: "{colors.rail}"
+    opacity: "0.78"
+  focus-lock:
+    textColor: "{colors.sun-ink}"
+    typography: "{typography.label}"
+    rounded: "{rounded.none}"
+    padding: "9px"
+  focus-lock-pressed:
+    backgroundColor: "{colors.caution}"
+    textColor: "{colors.caution-ink}"
+  editor-field:
+    backgroundColor: "{colors.sun-scene-sunk}"
+    textColor: "{colors.sun-ink}"
+    rounded: "{rounded.none}"
+    padding: "6px 8px"
+  editor-button:
+    textColor: "{colors.sun-ink-dim}"
+    typography: "{typography.label}"
+    rounded: "{rounded.none}"
+    padding: "6px 9px"
+  editor-button-primary:
+    backgroundColor: "{colors.sun-ink}"
+    textColor: "{colors.sun-scene-panel}"
 ---
 
 # Design System: E3 Draft — Command Center
@@ -200,7 +237,7 @@ Two neutral fields — a fixed black camera body and a scene that swaps between 
 - **Headline** (Saira Condensed 700, 20px, 0.02em, uppercase): The on-the-clock team name.
 - **Title** (DSEG14 700, 12px, 0.08em): Panel titles, alert titles, the REC lamp, the tape counter, the exposure label. Every framed region is titled in the instrument face.
 - **Body** (Saira Condensed 700, 15px, 0.01em): Player names in the pool. Secondary body at 13px/600 for plan targets, roster rows, log names and grid names.
-- **Value** (DSEG14 700, 11–15px, tabular): Every measured number — ranks, ADP, tier counts, plan health percent, roster slot fill, pick labels, grid round numbers.
+- **Value** (DSEG14 700, 11–15px, tabular): Every measured *number* — ranks, ADP, tier counts, plan health percent, roster slot fill, pick labels, grid round numbers, round markers. Alphanumeric values (`WR29`, `LB1`) fall back to the condensed face; the segment face draws digits beautifully and letters badly.
 - **Label** (Saira Condensed 600, 11px, 0.06–0.16em, uppercase): Field keys, panel meta, position filters, log team names, framing stops.
 
 ### Named Rules
@@ -209,23 +246,31 @@ Two neutral fields — a fixed black camera body and a scene that swaps between 
 
 **The Segment Air Rule.** `.seg` carries `letter-spacing: 0.08em` and it is not negotiable. A 14-segment `1` is one vertical stroke, so `1.11` collapses into ambiguous bars at tighter tracking — and these characters carry decision values under a one-minute clock in daylight.
 
+**The Digits-Only Rule.** `.seg` goes on values that are actually numeric. A position rank like `WR29` in a 14-segment face is a puzzle, not a readout, so the value helper tests `/^[-+]?[\d.]+$/` and only then adds the class. The exceptions are deliberate instrument labels — `R05:P04`, `R07` — where the letter is part of a tape counter and reads as one.
+
 **The 11px Floor Rule.** No type below 11px anywhere in the system. Tracking, uppercase and tabular figures do the compression work that a smaller size would otherwise do.
 
 ## Layout
 
-A fixed three-row viewfinder frame: 52px top rail, fluid scene, 52px bottom rail, filling `100dvh` with the page itself locked from scrolling. The frame's single column is declared `minmax(0, 1fr)` so a wide child can never stretch it past the viewport; every scrolling region is a panel body with its own `overflow-y`.
+A fixed three-row viewfinder frame: 52px top rail, fluid scene, 52px bottom rail, filling `100dvh` with the page itself locked from scrolling. The frame's single column is declared `minmax(0, 1fr)` so a wide child can never stretch it past the viewport; every scrolling region is a panel body with its own `overflow-y`. The rails clip horizontally, because the zoom marker is a full-track-width box moved by `translateX` and reaches past its scale at the far stop.
+
+The scene is a flex column, so the strips that appear above the framing — the unmatched-pick alert, the round cue — push the framing down rather than overflowing a clipped block. The visible framing takes `flex: 1; min-height: 0`.
+
+Above the frame sits one overlay layer at `z-index: 20`: a fixed, centered grid holding a scrim and a panel card. Two surfaces live there — the focus card (520px, content-height) and setup (880px × 780px).
 
 The default FIELD framing is a three-column scene at `1.35fr / 1.15fr / 1fr` — pool, plans, then a stacked column of roster over transactions at `0.9fr / 1.1fr` — with a 10px gap throughout. Single-panel framings (BOARD, TARGET) fill the scene as one full-height grid row rather than floating a panel above bare ground.
 
 Spacing rhythm is tight and even: 3/4/6/8/10/12/16/18px. Panel bodies pad 8px, panel heads 9px×12px, the scene 16px, rails 18px horizontal.
 
-Responsive behavior is triage, not reflow. Below 1200px the stacked roster/transactions column is dropped and the scene goes two-column. Below 820px the frame releases to `auto / 1fr / auto` with vertical page scroll, rails wrap with the clock group promoted to its own full-width first row, the reference-only readouts (format, overall pick) are dropped as they are reference rather than decision material, the scene goes single-column with the stack restored beneath, and panel bodies cap at 60vh. Below 420px only the zoom bar tightens.
+Responsive behavior is triage, not reflow. Below 1200px the stacked roster/transactions column is dropped and the scene goes two-column. Below 820px the frame releases to `auto / 1fr / auto` with vertical page scroll, rails wrap with the clock group promoted to its own full-width first row, the reference-only readouts (format, overall pick) are dropped as they are reference rather than decision material, the scene goes single-column with the stack restored beneath, and panel bodies cap at 60vh. Setup takes the full screen there and its body is exempted from the 60vh cap, since an overlay owns the viewport rather than sharing a scrolling page; the focus card stays the size of what it has to say. Editor rows drop their verdict column under the name it belongs to. Below 420px only the zoom bar tightens.
 
 ## Elevation & Depth
 
 Flat by construction. No shadow token exists in the system; nothing in the interface is lifted off its ground. Depth is entirely tonal and linear: a three-step scene ramp (field → panel face → sunk) plus 1px HUD hairlines, with corner brackets standing in for the visual weight a shadow would otherwise carry. The single inset used anywhere is a 2px amber edge marking James's own column on the board grid.
 
-**The Flat Frame Rule.** Surfaces do not lift. If a new element needs to read as forward, move it up the tonal ramp or give it brackets — do not reach for a drop shadow.
+The one exception to flatness is not lift but occlusion: an overlay covers the scene with a letterbox-black scrim at 0.78 opacity — the camera body closing over the image — and the card on top of it is an ordinary bracketed panel at the same elevation as any other.
+
+**The Flat Frame Rule.** Surfaces do not lift. If a new element needs to read as forward, move it up the tonal ramp, give it brackets, or put it behind a scrim — do not reach for a drop shadow.
 
 ## Shapes
 
@@ -252,16 +297,36 @@ The primary container and the system's signature. Square (0 radius), panel-face 
 - **Framing stop:** Sits inside the zoom track, transparent, 11px tracked caps in rail grey; hover goes OSD white, selected goes amber. `line-height: 1` keeps the label box inside the clear channel between the tick bands so no label ever sits on the amber fill.
 - **Exposure toggle:** 5px×11px, 1px rail-line border, OSD white label, amber-stroked sun/moon glyph; hover lightens the border to rail grey.
 - **Focus lock (star-to-target):** A 22px hit area holding a 15px open-bracket-pair mark at 0.5 opacity, rising to full on row hover; pressed it goes amber and swaps to the closed pair with a center dot. The closed bracket pair is what "locked" means in this world.
+- **Watchlist chip:** Same geometry as the position filter but with a 1px HUD border at rest and a segmented count after the label. Pressed inverts to **solid ink**, not amber — amber is caution in this world and a filter is not a warning. This is the tag axis wherever it appears, filtering the board and setting tags on the focus card alike.
+- **Icon button:** A 22px hit area holding a 14px mark at dim ink, rising to full on hover. Close, and the setup entry point in the PLANS head.
+- **Editor button:** 11px/700 tracked caps, 6px×9px, 1px HUD border, dim ink; hover raises ink and border. The `--go` variant (SAVE) is solid ink with panel-face text, and greys to HUD when disabled — the primary action on a prep surface is ink, never amber.
 - **Focus:** Global — a 2px amber outline at 2px offset, everywhere, both exposures.
 
 ### Player Row
-The pool's primary line. Name at 15px/700 with ellipsis, a tracked-caps sub-line (position · team · bye), then right-aligned figure stacks pairing an 11px condensed key over a 13px segmented value, and the lock at the end. Transparent 1px border at rest; hover fills to the sunk tone and reveals a HUD border. Transitions are 0.12s on border and background only.
+The pool's primary line, shared by ON THE BOARD and TARGET. Name at 15px/700 with ellipsis, a tracked-caps sub-line (position · team · bye, plus where he went and which tags he carries), an optional 12px dim note line in James's own words, then right-aligned figure stacks pairing an 11px condensed key over a 13px value, and the lock at the end. Transparent 1px border at rest; hover fills to the sunk tone and reveals a HUD border. Transitions are 0.12s on border and background only.
+
+The name block is itself the button that opens the focus card; the lock stays a separate control beside it, because during the draft locking a target has to cost one click. Nested buttons are invalid, so the row is a `div` with two sibling controls rather than a button wrapping a button. A taken row strikes its name through and drops it to dim ink — struck out rather than faded away, since the reason he was on the list is still worth reading.
 
 ### Tier Band
 Groups the pool by scarcity. A head bar with a tracked-caps label, a flexible zebra slot and a segmented remaining count over a 1px hairline. In the thin state the rule thickens to 2px alarm, the head fills with alarm field, label and count go alarm, and the zebra band switches on — three cues at once.
 
 ### Plan Card
 Bordered, panel-faced, with a head carrying an uppercase plan name and a health group: a 56px×8px bordered meter plus a segmented percentage. The meter fill is scaled via `transform: scaleX()`, not resized — animating width would relayout on every poll. Fill is ink by default, HUD when the plan is dead, amber when it is hot. Target rows read round · name · pick; taken targets dim and strike through, live targets keep full ink with an amber pick label, and written notes sit on the sunk tone in tracked caps so they never read as an available player.
+
+### Round Cue
+A single-line strip above the framing carrying James's own note for the round in play — or, when that round has none, the next one ahead, dropped to dim ink so a look-ahead never reads as the round he is in. Sunk tone, 1px HUD border, a segmented round marker then 13px body. Lines he wrapped in `***asterisks***` render as tracked caps at 700; multiple lines are joined by a dim middot. Advisory only: **no amber and no zebra**, which mean act-now. The same note also runs as a full-width band across its own round in the board grid, with the marker pinned `position: sticky; left: 6px` so it stays readable while the grid scrolls sideways.
+
+### Focus Card
+One player, pulled out of the frame. A 520px bracketed panel over the scrim: name in the **condensed** face at 20px (a name is a name, not a readout), position · team, and a status chip. The chip reads `ON THE BOARD` in dim outline, or `GONE 5.02 · KRAME` as a solid ink block — gone is not amber, because amber means act now and there is nothing left to act on. Below it a stat grid of bordered 78px-minimum cells, each an 11px key over a value, rendering only the figures that exist (IDP carry no Fantasy Footballers numbers, and a wall of em-dashes says nothing). Then the three watchlist controls: a full-width lock button that fills amber when pressed — a locked target being the one thing amber means here — the five tag chips, and a note field.
+
+The card does not re-render from the stream. Only its status line is rewritten when a payload lands, so a pick that takes this player shows immediately without discarding a half-typed note.
+
+### Setup Overlay
+MENU mode: the prep surface, deliberately not the viewfinder. An 880px × 780px bracketed panel with a head, a scrolling body of sections, and a foot carrying a hint, DISCARD and SAVE. Same ink and the same frame as the scene, but roomy where the scene is dense — nothing here is read under a one-minute clock. `UNSAVED` in the head meta is the only caution the surface has, and it takes alarm.
+
+Rows are a `46px / 1fr / 150px / 22px` grid: a segmented round field, a name field autocompleting against the real pool, a verdict, and a delete. Fields share one treatment across both overlays — sunk ground, 1px HUD border, condensed 13px. An emptied round takes an alarm border, because that row will not survive the save.
+
+The verdict column has three registers, and the middle one is the point: `WR · CIN` in dim for a match; `NO MATCH — Bijan Robinson?` in alarm when the matcher can name a near miss, which is what a typo actually looks like; and a quiet `NOTE` when nothing matches and nothing is close, because these queues legitimately hold written reminders like `CHECK LATE ROUNDERS` and the board already renders those as notes.
 
 ### Zebra Alert
 The one error surface. A 46px 45° zebra stripe flush against a body on alarm field, 1px alarm border, segmented title over 13px/600 text. `display: flex` is restated under `[hidden]` so the empty banner stays hidden.
@@ -288,6 +353,8 @@ Two registers. Inline empties are centered 13px/600 dim text. The TARGET empty i
 - **Do** keep `letter-spacing: 0.08em` on every `.seg` element.
 - **Do** give every framed region all four bracket corners.
 - **Do** back every state with at least two non-color cues.
+- **Do** reserve amber for caution — scarcity, on the clock, a live or locked target. Every other emphasis, including a pressed filter and a primary save, is solid ink.
+- **Do** occlude with the letterbox scrim when a surface takes over, and keep the card on it an ordinary bracketed panel.
 - **Do** animate `transform` and `clip-path`; keep layout properties out of every transition.
 - **Do** keep the HUD dot grid as-is. It is one of the world's three named materials on a measurement surface, and the `codex-grid-background` advisory it trips is a knowing, reviewed exception left unsuppressed on purpose — so that a future *decorative* grid still trips it. Do not "fix" it.
 - **Do** self-host both faces from `public/fonts/` under SIL OFL with licences alongside.
@@ -303,3 +370,5 @@ Two registers. Inline empties are centered 13px/600 dim text. The TARGET empty i
 - **Don't** add a second authored animation. One moment, on a landing pick.
 - **Don't** float a single panel above bare scene ground — single-panel framings fill the frame.
 - **Don't** carry state in color alone.
+- **Don't** put the segment face on anything that isn't digits, outside the deliberate tape-counter labels.
+- **Don't** let the scene clip a strip that belongs above the framing — the scene is a column, so add siblings, don't overlay them.

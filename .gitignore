@@ -14,6 +14,9 @@ config.json
 # Generated board tab (regenerate with tools/make-board-tab.mjs)
 out/
 
+# One-save-back copy the plan editor leaves behind
+data/*.json.bak
+
 # Build-time screenshots
 .impeccable/shots/
 .impeccable/questions/

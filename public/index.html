@@ -100,7 +100,15 @@
           <section class="panel panel--plans" aria-labelledby="h-plans">
             <div class="panel__head">
               <h2 class="panel__title seg" id="h-plans">PLANS</h2>
-              <span class="panel__meta" id="plansMeta"></span>
+              <span class="panel__tools">
+                <span class="panel__meta" id="plansMeta"></span>
+                <button class="iconbtn" id="planEdit" aria-label="Open setup to edit plans and notes">
+                  <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square">
+                    <path d="M2 4h12M2 8h12M2 12h12" />
+                    <path d="M6 2.5v3M10.5 6.5v3M4.5 10.5v3" />
+                  </svg>
+                </button>
+              </span>
             </div>
             <div class="panel__body" id="plansList"></div>
           </section>
@@ -201,6 +209,33 @@
         <div class="panel__body" id="focusBody"></div>
       </section>
     </div>
+
+    <!-- ================================================================ setup -->
+    <!-- MENU mode. Everything set before recording starts: the contingency plans
+         and the round notes, which are the years of judgment this app exists to
+         carry forward. Not meant to be opened on the clock. -->
+    <div class="setup" id="setup" hidden>
+      <div class="focus__scrim" data-setup-close></div>
+      <section class="panel setup__card" role="dialog" aria-modal="true" aria-labelledby="setupTitle" tabindex="-1">
+        <div class="panel__head">
+          <h2 class="panel__title seg" id="setupTitle">SETUP</h2>
+          <span class="panel__tools">
+            <span class="panel__meta" id="setupMeta"></span>
+            <button class="iconbtn" data-setup-close aria-label="Close setup">
+              <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="square"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9" /></svg>
+            </button>
+          </span>
+        </div>
+        <div class="panel__body" id="setupBody"></div>
+        <div class="setup__foot">
+          <span class="setup__hint" id="setupHint"></span>
+          <button class="ebtn" data-setup-close>DISCARD</button>
+          <button class="ebtn ebtn--go" id="setupSave" disabled>SAVE</button>
+        </div>
+      </section>
+    </div>
+
+    <datalist id="playerNames"></datalist>
 
     <script src="/app.js" type="module"></script>
   </body>

@@ -2,6 +2,9 @@
    Receives whole computed states over SSE and re-renders. The server does every
    calculation, so this file only ever frames what it is handed. */
 
+import { esc, adp, tier, seg } from "./util.js";
+import { openSetup, closeSetup, isSetupOpen, initSetup } from "./setup.js";
+
 const $ = (id) => document.getElementById(id);
 
 const el = {
@@ -41,6 +44,7 @@ const el = {
   focus: $("focus"),
   focusName: $("focusName"),
   focusBody: $("focusBody"),
+  planEdit: $("planEdit"),
 };
 
 /* Authored SVG, one stroke weight. The focus-lock mark is the viewfinder's own
@@ -103,21 +107,6 @@ let watch = new Map();
 
 let focusId = null;
 let focusReturn = null;
-
-/* ---------------------------------------------------------------- helpers */
-
-const esc = (s) =>
-  String(s ?? "").replace(/[&<>"']/g, (c) =>
-    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]
-  );
-
-/* FFB ADP is stored round.pick (1.02), so it prints as-is with two decimals. */
-const adp = (v) => (typeof v === "number" ? v.toFixed(2) : "—");
-const tier = (v) => (v == null || v === "" ? "—" : String(v));
-
-/* DSEG14 is a real segment display: it draws digits beautifully and letters
-   badly. Position ranks like "WR29" or "LB1" go in the UI face instead. */
-const seg = (v) => (/^[-+]?[\d.]+$/.test(String(v)) ? " seg" : "");
 
 /* ------------------------------------------------------------------ rails */
 
@@ -805,21 +794,31 @@ el.exposure.addEventListener("click", () => {
   setExposure(el.body.dataset.exposure === "sun" ? "night" : "sun");
 });
 
+el.planEdit.addEventListener("click", () => openSetup());
+
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && !el.focus.hidden) {
-    e.preventDefault();
-    return closeFocus();
+  if (e.key === "Escape") {
+    if (isSetupOpen()) {
+      e.preventDefault();
+      return void closeSetup();
+    }
+    if (!el.focus.hidden) {
+      e.preventDefault();
+      return closeFocus();
+    }
   }
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   if (/^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
-  // The card is modal: don't reframe the scene behind it.
-  if (!el.focus.hidden) return;
+  // Both overlays are modal: don't reframe the scene behind them.
+  if (!el.focus.hidden || isSetupOpen()) return;
   const k = e.key.toLowerCase();
   if (k === "1") setView("grid");
   else if (k === "2") setView("field");
   else if (k === "3") setView("player");
   else if (k === "e") setExposure(el.body.dataset.exposure === "sun" ? "night" : "sun");
 });
+
+initSetup();
 
 /* ------------------------------------------------------------------ stream */
 
@@ -862,6 +861,8 @@ if (["grid", "field", "player"].includes(wantView)) setView(wantView);
    and exposure params. Deferred until the first payload lands, because the card
    is built from the state the server sends. */
 const wantFocus = params.get("focus");
+/* ?setup=1 opens straight into MENU mode. */
+if (params.get("setup") === "1") openSetup();
 
 /* ?static=1 renders one snapshot and never opens the stream. The live page
    holds an SSE connection open forever, which means it never reaches a "load

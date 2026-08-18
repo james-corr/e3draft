@@ -2,17 +2,18 @@
 
 ## Now
 
+Everything here needs James, not code.
+
 - Connect the live board: add the `DRAFT BOARD` tab to the shared sheet, share it link-viewable, create the Google API key, fill in `config.json`
 - Confirm the keeper rule detail — which round the forfeited pick comes from
 - Replace the 2025 player data with this year's FantasyPros + Fantasy Footballers exports
-- Rewrite the 9 contingency plans for this season (they currently hold 2025's targets)
+- Rewrite the 9 contingency plans and the round notes for this season — now done in the app's setup surface rather than by hand
 
 ## Next
 
-- Editing plans in the app instead of by hand in `data/branches.<year>.json`
-- Round-anchored notes surfaced in the interface (10 are extracted and stored, nothing renders them yet)
-- Tag editing (Breakout / Sleepers / Busts / Late Round Fliers / My Guys) — the storage and the unified model exist, only starring is wired to the UI
 - Pre-fill keeper picks on the board tab once the round rule is settled
+- Reordering plans, and duplicating one as the starting point for another
+- A rankings importer, so step 2 of the yearly refresh is a file drop rather than a JSON shape to match
 
 ## Later
 
@@ -22,6 +23,9 @@
 
 ## Shipped
 
+- Setup surface: contingency plans and round notes edited in the app, names checked against the live matcher, save backed by a `.bak` and a report of anything dropped
+- Watchlist: stars and the five real tags unified into one record per player, edited from a focus card, filterable on the board
+- Round notes: the cue strip for the round in play, and every note written across its own round on the board
 - Design: camcorder-viewfinder world, SUN/NIGHT exposures, self-hosted DSEG14 + Saira Condensed, recorded in PRODUCT.md and DESIGN.md; finish review closed with every finding resolved
 - Draft-day interface: board grid, tier-banded available pool, plan health, my team, transactions, target locking
 - Engine: taken/available, tier counts, rosters, snake pick order, plan health — 1.75ms per recompute

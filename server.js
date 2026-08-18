@@ -4,7 +4,7 @@ import { join, extname, dirname, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 
-import { loadPlayers } from "./lib/players.js";
+import { loadPlayers, resolvePick } from "./lib/players.js";
 import { readBoard } from "./lib/board.js";
 import { computeState } from "./lib/state.js";
 import { createStore } from "./lib/store.js";
@@ -167,13 +167,52 @@ const server = createServer(async (req, res) => {
     }
   }
 
+  // --- the whole pool, for the plan editor's name field --------------------
+  // Sent once when the editor opens, not per keystroke.
+  if (path === "/api/players") {
+    return sendJson(
+      res,
+      200,
+      pool.players.map((p) => ({ id: p.id, name: p.name, pos: p.pos, team: p.team }))
+    );
+  }
+
+  // --- does this typed name land on a real player? -------------------------
+  // The editor asks the server rather than matching names itself, so a plan
+  // target is judged by exactly the matcher that will read it on draft day.
+  if (path === "/api/resolve" && req.method === "POST") {
+    try {
+      const { names } = await readBody(req);
+      if (!Array.isArray(names)) throw new Error("names must be an array");
+      return sendJson(res, 200, {
+        results: names.map((raw) => {
+          const name = String(raw ?? "");
+          const { matched, suggestion } = resolvePick(pool, name);
+          return {
+            name,
+            matched: matched.map((m) => ({ name: m.name, pos: m.pos, team: m.team })),
+            suggestion: suggestion ?? null,
+          };
+        }),
+      });
+    } catch (err) {
+      return sendJson(res, 400, { error: err.message });
+    }
+  }
+
   // --- contingency plans --------------------------------------------------
+  // The raw plan, not the computed branches the stream carries: the editor
+  // works on what is on disk.
+  if (path === "/api/plan" && req.method === "GET") {
+    return sendJson(res, 200, store.plan);
+  }
+
   if (path === "/api/plan" && req.method === "POST") {
     try {
       const next = await readBody(req);
-      store.savePlan(next);
+      const saved = store.savePlan(next);
       recomputeLocal();
-      return sendJson(res, 200, { ok: true });
+      return sendJson(res, 200, { ok: true, plan: saved });
     } catch (err) {
       return sendJson(res, 400, { error: err.message });
     }
