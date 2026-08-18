@@ -13,12 +13,11 @@ const ROOT = dirname(fileURLToPath(import.meta.url));
 const DATA = join(ROOT, "data");
 const PUBLIC = join(ROOT, "public");
 const PORT = Number(process.env.PORT) || 4173;
-const SEASON = 2025;
 
 // ---------------------------------------------------------------------------
 // Config
 // ---------------------------------------------------------------------------
-const DEFAULTS = { source: "local", pollMs: 1500, tabName: "DRAFT BOARD" };
+const DEFAULTS = { source: "local", pollMs: 1500, tabName: "DRAFT BOARD", season: 2025 };
 const configPath = join(ROOT, "config.json");
 const config = { ...DEFAULTS, ...(existsSync(configPath) ? JSON.parse(readFileSync(configPath, "utf8")) : {}) };
 
@@ -27,8 +26,12 @@ if (config.source === "sheet" && (!config.sheetId || !config.apiKey)) {
   config.source = "local";
 }
 
+const SEASON = config.season;
+
 const league = JSON.parse(readFileSync(join(DATA, "league.json"), "utf8"));
-const pool = loadPlayers(DATA, SEASON);
+// `let`, not `const`: a rankings refresh swaps the whole pool in place. See
+// /api/refresh below — nothing else is allowed to reassign it.
+let pool = loadPlayers(DATA, SEASON);
 const store = createStore(DATA, SEASON);
 
 // ---------------------------------------------------------------------------
@@ -40,6 +43,7 @@ let lastHash = null;
 let lastError = null;
 let consecutiveErrors = 0;
 const clients = new Set();
+let refreshing = false;
 
 function hashBoard(board) {
   return createHash("sha1")
@@ -77,6 +81,16 @@ function recomputeLocal() {
   if (!lastBoard) return;
   current = computeState({ pool, league, board: lastBoard, inventory: store.inventory, plan: store.plan });
   broadcast();
+}
+
+/**
+ * Re-read players.<season>.json after a rankings refresh has replaced it.
+ * The pool is otherwise loaded once at boot and never touched.
+ */
+function reloadPool() {
+  pool = loadPlayers(DATA, SEASON);
+  recomputeLocal();
+  return pool.players.length;
 }
 
 function payload() {
@@ -164,6 +178,43 @@ const server = createServer(async (req, res) => {
       return sendJson(res, 200, { ok: true, entry });
     } catch (err) {
       return sendJson(res, 400, { error: err.message });
+    }
+  }
+
+  // --- refresh the rankings from the source sites --------------------------
+  // Pre-draft maintenance, deliberately not reachable from the draft-day rail.
+  if (path === "/api/refresh" && req.method === "POST") {
+    if (refreshing) return sendJson(res, 409, { error: "a refresh is already running" });
+
+    // Swapping the player pool mid-draft would re-key every player while picks
+    // are landing. There is no reason to ever want that, so it is simply not
+    // allowed once the board has picks on it.
+    if (current?.board?.madePicks > 0) {
+      return sendJson(res, 409, {
+        error: `The board already has ${current.board.madePicks} picks. Refresh the rankings before the draft, not during it.`,
+      });
+    }
+
+    refreshing = true;
+    try {
+      const body = await readBody(req).catch(() => ({}));
+      const { refresh } = await import("./tools/ingest/refresh.mjs");
+      const lines = [];
+      const out = await refresh({
+        season: SEASON,
+        sources: Array.isArray(body.sources) ? body.sources : ["ffb"],
+        log: (line) => {
+          lines.push(String(line));
+          console.log(line);
+        },
+      });
+      if (out.ok && out.written) out.players = reloadPool();
+      return sendJson(res, out.ok ? 200 : 422, { ...out, log: lines });
+    } catch (err) {
+      console.error(`[refresh] ${err.message}`);
+      return sendJson(res, 500, { ok: false, errors: [err.message] });
+    } finally {
+      refreshing = false;
     }
   }
 

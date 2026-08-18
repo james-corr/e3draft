@@ -6,7 +6,10 @@
   "type": "module",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "refresh": "node tools/ingest/refresh.mjs",
+    "recon": "node tools/ingest/recon.mjs",
+    "set-login": "node tools/ingest/set-login.mjs"
   },
   "engines": {
     "node": ">=18"

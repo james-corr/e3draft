@@ -20,3 +20,9 @@ data/*.json.bak
 # Build-time screenshots
 .impeccable/shots/
 .impeccable/questions/
+
+# Saved thefantasyfootballers.com session cookies. Never commit.
+.auth/
+
+# Raw source pulls kept for diffing; regenerate with npm run refresh
+data/raw/

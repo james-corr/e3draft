@@ -8,6 +8,17 @@
   "_pollMs": "How often to ask Google for new picks. 1500ms keeps us inside the 1-3 second target with room to spare.",
   "pollMs": 1500,
 
+  "_season": "Which season the APP DISPLAYS — it reads players.<season>.json and friends. Separate from what `npm run refresh` pulls, which is always the current year. Switching seasons means this key plus a branches/inventory file for that year.",
+  "season": 2026,
+
+  "_ffb": "thefantasyfootballers.com login, used only by `npm run refresh` to pull your UDK rankings. Never leaves this machine.",
+  "ffb": {
+    "email": "your@email.com",
+    "password": "your-password",
+    "_scoringSystem": "Which UDK ranking set to pull. One of: STD (4pt QB), STD (6pt QB), HALF (4pt QB), HALF (6pt QB), PPR (4pt QB), PPR (6pt QB). James's league is half-PPR with 6-point passing TDs.",
+    "scoringSystem": "HALF (6pt QB)"
+  },
+
   "_source": "'sheet' reads the live Google Sheet. 'local' reads data/board.local.json instead, so the app runs with no API key — useful for testing before draft day.",
   "source": "local"
 }

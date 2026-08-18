@@ -46,14 +46,16 @@ knows. Its live truth comes from the league's real shared board, not from a rank
 - This app reads that sheet read-only via a Google Cloud API key and does every calculation
   locally. The old setup used IMPORTRANGE plus chained formulas across ~800 players, which is
   what made it too slow.
-- Ranking data is pulled manually once a year: FantasyPros consensus cheat sheet as the base
-  player list, enriched with Fantasy Footballers tier/risk/ADP/upside. Scraping those sites is
-  explicitly out of scope.
+- Ranking data comes from FantasyPros consensus as the base player list, enriched with Fantasy
+  Footballers tier/risk/ADP/upside. **Automated since 08/18/26** — `npm run refresh` pulls the
+  Fantasy Footballers UDK directly (`tools/ingest/`). This reverses the earlier "scraping is out
+  of scope" decision, which had made a manual hour-long chore of the one thing that has to be
+  current on draft day. The FantasyPros side is not automated yet.
 
 ## Capabilities and Constraints
 
 - **League:** 12 teams, 20 rounds, snake draft. James's team is "Jimmy", drafting 10th.
-- **Scoring:** half-PPR (0.5 per reception).
+- **Scoring:** half-PPR (0.5 per reception), **6 points per passing touchdown** (confirmed by James 08/18/26 — it selects which of the UDK's six ranking sets we pull, and moves QBs several spots).
 - **Starting lineup:** 1 QB, 2 RB, 3 WR, 1 TE, 1 FLEX, plus DST, K, and IDP slots (LB, DE, S).
   Remainder is bench.
 - **Keepers:** one keeper per team, costing a draft pick. *Undecided and not to be invented:

@@ -1,0 +1,136 @@
+#!/usr/bin/env node
+import { writeFileSync, renameSync, mkdirSync, existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import { DATA, ROOT, loadIngestConfig, stamp } from "./config.mjs";
+import { merge } from "./merge.mjs";
+import { validate } from "./validate.mjs";
+import * as ffb from "./ffb.mjs";
+
+/** League size drives the ADP round.pick conversion, so it comes from league.json. */
+function readLeague() {
+  try {
+    return JSON.parse(readFileSync(join(DATA, "league.json"), "utf8"));
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * The yearly (or weekly) rankings refresh. This is the script extract_from_xlsx.py
+ * has been pointing at since the migration.
+ *
+ *   node tools/ingest/refresh.mjs [--dry-run] [--season=2026] [--source=ffb]
+ *
+ * Pulls every configured source, merges them, validates the result, and only
+ * then replaces data/players.<season>.json. Raw pulls are kept under
+ * data/raw/<MM_DD_YY>/ so any run can be diffed or eyeballed after the fact.
+ */
+
+const SOURCES = { ffb };
+
+export async function refresh({ season, sources = ["ffb"], dryRun = false, log = console.log } = {}) {
+  const cfg = await loadIngestConfig();
+  season = season ?? cfg.season;
+  cfg.league = readLeague();
+
+  const outDir = join(DATA, "raw", stamp());
+  const result = { season, dryRun, counts: {}, problems: [], warnings: [], rawDir: outDir };
+
+  const pulled = [];
+  const expected = [];
+
+  for (const name of sources) {
+    const source = SOURCES[name];
+    if (!source) throw new Error(`unknown source "${name}" (have: ${Object.keys(SOURCES).join(", ")})`);
+    log(`\n${name}: pulling ${season} rankings`);
+    const out = await source.pull({
+      season,
+      credentials: cfg[name] ?? {},
+      league: cfg.league,
+      outDir,
+      log,
+    });
+    pulled.push(out.rows);
+    Object.assign(result.counts, out.counts);
+    result.problems.push(...(out.problems ?? []));
+    expected.push(...(out.positions ?? []));
+    if (out.meta) result.meta = { ...(result.meta ?? {}), [name]: out.meta };
+  }
+
+  const players = merge(pulled);
+  result.total = players.length;
+
+  const target = join(DATA, `players.${season}.json`);
+  const check = validate({ players, counts: result.counts, expected, previousFile: target });
+
+  // A partial refresh must not quietly delete another source's work.
+  // Running only --source=ffb over a file that also holds FantasyPros columns
+  // would replace it with FFB-only rows, and the loss would be invisible until
+  // draft day. Refuse instead, and say what to run.
+  for (const [field, owner] of [["pros_rank", "FantasyPros"]]) {
+    if (!existsSync(target)) continue;
+    let had = 0;
+    try {
+      had = JSON.parse(readFileSync(target, "utf8")).filter((p) => p?.[field] != null).length;
+    } catch {
+      continue;
+    }
+    const have = players.filter((p) => p[field] != null).length;
+    if (had > 0 && have === 0) {
+      check.errors.push(
+        `${target} currently holds ${owner} data for ${had} players, and this run pulled none. ` +
+          `Writing would delete it. Refresh every source together, or pass --source=ffb,<the ${owner} source>.`
+      );
+      check.ok = false;
+    }
+  }
+  result.ok = check.ok && result.problems.length === 0;
+  result.errors = [...result.problems, ...check.errors];
+  result.warnings = check.warnings;
+
+  log(`\nmerged ${players.length} players across ${new Set(players.map((p) => p.pos)).size} positions`);
+  for (const w of result.warnings) log(`  note: ${w}`);
+
+  if (!result.ok) {
+    log(`\nREFUSING TO WRITE — ${result.errors.length} problem(s):`);
+    for (const e of result.errors) log(`  - ${e}`);
+    log(`\n${existsSync(target) ? `${target} is untouched.` : "Nothing was written."}`);
+    log(`Raw pull kept at ${outDir} so you can see what came back.`);
+    return result;
+  }
+
+  if (dryRun) {
+    log(`\ndry run — validated clean, wrote nothing. Raw pull at ${outDir}`);
+    return result;
+  }
+
+  // Temp-file + rename, the same way lib/store.js writes, so an interrupted
+  // save can never leave a half-written player pool behind.
+  mkdirSync(DATA, { recursive: true });
+  if (existsSync(target)) writeFileSync(`${target}.bak`, readFileSync(target));
+  const tmp = `${target}.tmp`;
+  writeFileSync(tmp, JSON.stringify(players, null, 2));
+  renameSync(tmp, target);
+
+  log(`\nwrote ${target} (${players.length} players)`);
+  log(`raw pull kept at ${outDir}`);
+  result.written = target;
+  return result;
+}
+
+// CLI
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const args = process.argv.slice(2);
+  const flag = (name) => args.find((a) => a.startsWith(`--${name}=`))?.split("=")[1];
+  try {
+    const out = await refresh({
+      season: flag("season") ? Number(flag("season")) : undefined,
+      sources: flag("source")?.split(",") ?? ["ffb"],
+      dryRun: args.includes("--dry-run"),
+    });
+    process.exit(out.ok ? 0 : 1);
+  } catch (err) {
+    console.error(`\nrefresh failed: ${err.message}`);
+    process.exit(1);
+  }
+}
