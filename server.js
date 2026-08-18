@@ -200,15 +200,29 @@ const server = createServer(async (req, res) => {
       const body = await readBody(req).catch(() => ({}));
       const { refresh } = await import("./tools/ingest/refresh.mjs");
       const lines = [];
+      // A refresh pulls THIS year's rankings, which is not necessarily the
+      // season the app is displaying — during a migration the new pool lands on
+      // disk before the app is switched over to it.
+      const pullSeason = Number(body.season) || new Date().getFullYear();
       const out = await refresh({
-        season: SEASON,
+        season: pullSeason,
         sources: Array.isArray(body.sources) ? body.sources : ["ffb"],
         log: (line) => {
           lines.push(String(line));
           console.log(line);
         },
       });
-      if (out.ok && out.written) out.players = reloadPool();
+      // Only swap the live pool if what we just wrote is the file this app
+      // reads. Otherwise say so, rather than implying a reload that didn't
+      // happen — a refresh that looks applied but isn't would be the worst
+      // outcome here.
+      if (out.ok && out.written) {
+        if (pullSeason === SEASON) out.players = reloadPool();
+        else out.warnings = [
+          ...(out.warnings ?? []),
+          `wrote the ${pullSeason} pool, but this app is showing ${SEASON} — set "season": ${pullSeason} in config.json to use it`,
+        ];
+      }
       return sendJson(res, out.ok ? 200 : 422, { ...out, log: lines });
     } catch (err) {
       console.error(`[refresh] ${err.message}`);

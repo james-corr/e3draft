@@ -159,6 +159,17 @@ function render() {
         round-by-round target queue, and the board scores how much of it is still alive.</p>
       ${planCards || `<p class="empty">No plans yet.</p>`}
     </section>
+
+    <section class="esec">
+      <div class="esec__head">
+        <h3 class="esec__title">Rankings</h3>
+        <button class="ebtn" data-refresh>REFRESH FROM UDK</button>
+      </div>
+      <p class="esec__hint">Pulls today's Fantasy Footballers Ultimate Draft Kit rankings and
+        rewrites the player pool. Takes a few seconds. Nothing is overwritten unless the whole
+        pull checks out, and it is refused once the board has picks on it — this is a
+        before-the-draft job.</p>
+    </section>
   `;
 
   markDirty();
@@ -327,11 +338,48 @@ function onClick(ev) {
     return;
   }
 
+  const refreshBtn = ev.target.closest("[data-refresh]");
+  if (refreshBtn) return refreshRankings(refreshBtn);
+
   const delTarget = ev.target.closest("[data-del-target]");
   if (delTarget) {
     const [bi, ti] = delTarget.dataset.delTarget.split(":").map(Number);
     draft.branches[bi]?.picks.splice(ti, 1);
     render();
+  }
+}
+
+/* --------------------------------------------------------------- rankings */
+
+/* Re-pull the player pool from the source sites.
+   Pre-draft maintenance, which is why it lives in here rather than on the
+   draft-day rail. The server does the work and refuses the whole thing if the
+   pull doesn't validate, so this only has to report what came back -- and it
+   reports a refusal as loudly as a failure, because a refresh that quietly did
+   nothing is the version of this that costs a pick. */
+async function refreshRankings(btn) {
+  const label = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "PULLING…";
+  hint("Pulling the latest rankings…");
+  try {
+    const res = await fetch("/api/refresh", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: "{}",
+    });
+    const body = await res.json();
+    if (!res.ok || !body.ok) {
+      const why = body.errors?.length ? body.errors.join(" · ") : body.error || `refresh failed: ${res.status}`;
+      throw new Error(why);
+    }
+    const notes = body.warnings?.length ? ` (${body.warnings.join("; ")})` : "";
+    hint(`Rankings updated — ${body.players ?? body.total} players in the pool.${notes}`);
+  } catch (err) {
+    hint(`Rankings not changed: ${err.message}`, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = label;
   }
 }
 

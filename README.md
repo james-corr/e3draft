@@ -118,12 +118,47 @@ set `"source": "sheet"`.
 This is the part that used to take an afternoon.
 
 1. Update team names and draft order in `data/league.json`.
-2. Drop in this year's FantasyPros consensus cheat sheet and Fantasy Footballers rankings as
-   `data/players.<year>.json` (see `tools/extract_from_xlsx.py` for the shape).
-3. Rewrite the plans and round notes in **setup** (the icon in the PLANS header).
-4. Clear the board tab and pre-fill any keepers.
+2. Pull this year's rankings — **REFRESH FROM UDK** in **setup**, or `npm run refresh` in a
+   terminal. Both do the same thing: log into thefantasyfootballers.com and rewrite
+   `data/players.<year>.json`. See "Refreshing the rankings" below.
+3. Point the app at the new season: set `"season"` in `config.json`.
+4. Rewrite the plans and round notes in **setup** (the icon in the PLANS header).
+5. Clear the board tab and pre-fill any keepers.
 
 No formulas to rewire, because there are no formulas.
+
+## Refreshing the rankings
+
+One-time setup: `npm run set-login`. It asks for your thefantasyfootballers.com email and
+password, checks them against the site, and saves them to `config.json` — which is gitignored, so
+they never leave this machine.
+
+Then, any time you want today's numbers:
+
+```
+npm run refresh              # pull and write
+npm run refresh -- --dry-run # pull and check, write nothing
+```
+
+or press **REFRESH FROM UDK** in the setup panel. It takes a few seconds.
+
+**It will not overwrite good data with a bad pull.** Every position has to come back with a
+sensible number of players, the total has to be in the same league as what it replaces, ids have
+to be unique, and the numbers have to be numbers. If anything fails it names the check, leaves
+the existing file exactly as it was, and keeps the raw pull under `data/raw/<date>/` so you can
+see what came back.
+
+Two things worth knowing:
+
+- **The UDK ranks no IDP.** No LB, DE, S, DT or CB — so this pull alone cannot fill a pool for a
+  league that starts them. FantasyPros is still needed for that half, and is not automated yet.
+  The refresh says so every time it runs.
+- **Rankings depend on scoring.** The UDK publishes six different ranking sets. Yours is
+  `HALF (6pt QB)`, set in `config.json`. Change the league's scoring and change that too, or the
+  rankings will be quietly answering a different question than the one you're asking.
+
+If Fantasy Footballers change their site, run `npm run recon` — it checks each piece the pull
+depends on and prints which one moved.
 
 ## How it fits together
 
