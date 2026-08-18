@@ -221,6 +221,8 @@ Two neutral fields — a fixed black camera body and a scene that swaps between 
 
 **The Caution-Only Rule.** Amber marks scarcity, the clock, live targets and the current framing stop. If a proposed amber does not mean "act on this now," it is the wrong color. Audit test: count the amber on screen — if it exceeds a handful of marks, something decorative got through.
 
+**The Ink Emphasis Rule.** Amber is caution; every other emphasis is solid ink on panel face — a pressed watchlist filter, a taken status block, the primary SAVE. This is the complement to the Caution-Only Rule and the question it answers: when something new wants to stand out, ask whether it is warning about anything. If it is not, it goes ink.
+
 **The Sunlight Rule.** SUN is the default exposure and a product constraint: the draft happens outdoors on a laptop. Any new scene color must clear contrast against `{colors.sun-scene}` and `{colors.sun-scene-panel}` first, and amber must be substituted for `{colors.sun-alarm}` on light ground.
 
 **The Three-Cue Rule.** No state is signalled by color alone. A thinning tier carries a heavier 2px rule, an amber label *and* the zebra band; a taken target is dimmed *and* struck through; an unfilled roster slot is dashed *and* dimmed. Add a second and third non-color cue before adding a hue.
