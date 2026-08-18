@@ -335,6 +335,10 @@ button {
 
 .scene {
   position: relative;
+  /* A column, so the warning and cue strips push the framing down instead of
+     overflowing it into `overflow: hidden`. */
+  display: flex;
+  flex-direction: column;
   min-width: 0;
   background-color: var(--scene);
   /* HUD dot grid — 1px, the world's third material. */
@@ -384,13 +388,14 @@ button {
 
 .view {
   display: none;
-  height: 100%;
 }
 
 [data-view="field"] .view--field {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(0, 1.15fr) minmax(0, 1fr);
   gap: var(--gap);
+  flex: 1;
+  min-height: 0;
 }
 
 /* Single-panel framings fill the scene. A panel floating above bare grid reads
@@ -399,7 +404,8 @@ button {
 [data-view="player"] .view--player {
   display: grid;
   grid-template-rows: minmax(0, 1fr);
-  height: 100%;
+  flex: 1;
+  min-height: 0;
 }
 
 .stack {
@@ -521,6 +527,52 @@ button {
   border-color: var(--caution);
 }
 
+/* --------------------------------------------------------- watchlist bar */
+
+/* `display` beats the hidden attribute, so restate it — an empty bar would
+   otherwise hold a row of head space before anything is tagged. */
+.tagbar[hidden] {
+  display: none;
+}
+
+.tagbar {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+}
+
+.tagbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  padding: 4px 6px;
+  color: var(--ink-dim);
+  border: 1px solid var(--hud);
+  transition: color 0.15s, border-color 0.15s, background-color 0.15s;
+}
+
+.tagbtn:hover {
+  color: var(--ink);
+  border-color: var(--ink-dim);
+}
+
+/* Pressed inverts to solid ink rather than amber. Amber is caution in this
+   world; a filter is not a warning. */
+.tagbtn[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--scene-panel);
+  border-color: var(--ink);
+}
+
+.tagbtn__n {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
 /* ------------------------------------------------------------ player row */
 
 .prow {
@@ -542,6 +594,10 @@ button {
 
 .prow__main {
   min-width: 0;
+  display: block;
+  width: 100%;
+  padding: 0;
+  text-align: left;
 }
 
 .prow__name {
@@ -562,6 +618,27 @@ button {
   text-transform: uppercase;
   color: var(--ink-dim);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* James's own words about the player, carried onto the row itself. */
+.prow__note {
+  display: block;
+  font-size: 12px;
+  color: var(--ink-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Watched, and already gone. Struck out rather than faded away — the reason he
+   was on the list is still worth reading. */
+.prow--taken .prow__name {
+  color: var(--ink-dim);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
 }
 
 .prow__figs {
@@ -586,8 +663,9 @@ button {
   color: var(--ink-dim);
 }
 
+/* No font-family here: numeric values carry `.seg` and get the segment face,
+   alphanumeric ones stay in the UI face where they are readable. */
 .fig__v {
-  font-family: var(--font-seg);
   font-size: 13px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -1064,6 +1142,80 @@ button {
   font-weight: 600;
 }
 
+/* -------------------------------------------------------------- round cue */
+
+/* `display` beats the hidden attribute — restate it, or a round with no note
+   still holds a strip of empty height. */
+.cue[hidden] {
+  display: none;
+}
+
+.cue {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex: none;
+  padding: 6px 10px;
+  margin-bottom: var(--gap);
+  background: var(--scene-sunk);
+  border: 1px solid var(--hud);
+}
+
+.cue__rd {
+  flex: none;
+  font-size: 12px;
+  color: var(--ink);
+}
+
+.cue__text {
+  margin: 0;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+/* Looking ahead rather than at the round in play: same note, lower voice. */
+.cue[data-ahead="true"] .cue__rd,
+.cue[data-ahead="true"] .cue__text {
+  color: var(--ink-dim);
+}
+
+.cue__hot {
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.cue__sep {
+  padding: 0 7px;
+  color: var(--ink-dim);
+}
+
+/* The same note written across its own round on the board. */
+.grid__noterow td {
+  background: var(--scene-sunk);
+  padding: 3px 6px;
+}
+
+.grid__note {
+  position: sticky;
+  left: 6px;
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--ink-dim);
+}
+
+.grid__noterd {
+  margin-right: 8px;
+  color: var(--ink);
+}
+
+.grid__note .cue__hot {
+  color: var(--ink);
+}
+
 /* --------------------------------------------------------------- zoom bar */
 
 .zoom {
@@ -1273,6 +1425,187 @@ button {
   margin: 0;
   font-size: 13px;
   font-weight: 600;
+  color: var(--ink-dim);
+}
+
+/* ---------------------------------------------------------- focus card */
+
+/* One subject pulled out of the frame for a focus check. The card is a panel,
+   so it wears the same four corner brackets as everything else. */
+.focus[hidden] {
+  display: none;
+}
+
+.focus {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+/* The camera body closing over the scene. */
+.focus__scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--rail);
+  opacity: 0.78;
+}
+
+.focus__card {
+  position: relative;
+  width: min(520px, 100%);
+  max-height: 100%;
+}
+
+/* A name is a name, not a readout — the segmented face is for numbers. */
+.focus__title {
+  font-family: var(--font-ui);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.iconbtn {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  color: var(--ink-dim);
+  transition: color 0.15s;
+}
+
+.iconbtn:hover {
+  color: var(--ink);
+}
+
+.iconbtn .ico {
+  width: 14px;
+  height: 14px;
+}
+
+.focus__ident {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 10px;
+}
+
+.focus__pos {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.focus__status {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  padding: 3px 7px;
+  border: 1px solid var(--hud);
+  color: var(--ink-dim);
+}
+
+/* Gone reads as a solid ink block, not amber. Amber means act now, and there is
+   nothing left here to act on. */
+.focus__status[data-taken="true"] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--scene-panel);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+  gap: 4px;
+  margin-bottom: 14px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 5px 7px;
+  border: 1px solid var(--hud);
+}
+
+.stat__k {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.stat__v {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.focus__k {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-bottom: 5px;
+}
+
+.focus__lock {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px;
+  margin-bottom: 14px;
+  border: 1px solid var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.focus__lock .ico {
+  width: 15px;
+  height: 15px;
+}
+
+/* Locked is a live target — the one thing amber means on this card. */
+.focus__lock[aria-pressed="true"] {
+  background: var(--caution);
+  border-color: var(--caution);
+  color: var(--caution-ink);
+}
+
+.tagbar--set {
+  margin-bottom: 14px;
+}
+
+.focus__note {
+  display: block;
+  width: 100%;
+  resize: vertical;
+  padding: 7px 8px;
+  background: var(--scene-sunk);
+  color: var(--ink);
+  border: 1px solid var(--hud);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.focus__note::placeholder {
   color: var(--ink-dim);
 }
 

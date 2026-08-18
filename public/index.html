@@ -75,6 +75,13 @@
           </div>
         </div>
 
+        <!-- Round cue: James's own note for the round in play, or the next one
+             coming. Advisory only — no amber, no zebra. Those mean act now. -->
+        <div class="cue" id="cue" hidden>
+          <span class="cue__rd seg" id="cueRd">R00</span>
+          <p class="cue__text" id="cueText"></p>
+        </div>
+
         <!-- ---------------------------------------------------- VIEW: FIELD -->
         <div class="view view--field" id="viewField">
           <!-- ON THE BOARD ------------------------------------------------- -->
@@ -82,6 +89,9 @@
             <div class="panel__head">
               <h2 class="panel__title seg" id="h-board">ON THE BOARD</h2>
               <div class="posbar" id="posbar" role="tablist" aria-label="Position filter"></div>
+              <!-- Only appears once something is actually tagged or locked. A fresh
+                   season starts with no watchlist, so it starts with no chrome. -->
+              <div class="tagbar" id="tagbar" aria-label="Watchlist filter" hidden></div>
             </div>
             <div class="panel__body" id="boardList"></div>
           </section>
@@ -130,7 +140,7 @@
           <section class="panel panel--player" aria-labelledby="h-player">
             <div class="panel__head">
               <h2 class="panel__title seg" id="h-player">TARGET</h2>
-              <span class="panel__meta">Starred players and watch tags</span>
+              <span class="panel__meta">Locked targets and watch tags</span>
             </div>
             <div class="panel__body" id="playerBody"></div>
           </section>
@@ -173,6 +183,23 @@
           </button>
         </div>
       </footer>
+    </div>
+
+    <!-- ============================================================ focus card -->
+    <!-- The viewfinder's own focus check: pull one subject out of the frame, look
+         at everything known about him, put him back. This is where a star and a
+         watch tag turn out to be the same act — both write one inventory record. -->
+    <div class="focus" id="focus" hidden>
+      <div class="focus__scrim" data-focus-close></div>
+      <section class="panel focus__card" role="dialog" aria-modal="true" aria-labelledby="focusName">
+        <div class="panel__head">
+          <h2 class="panel__title focus__title" id="focusName">—</h2>
+          <button class="iconbtn" data-focus-close aria-label="Close focus card">
+            <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="square"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9" /></svg>
+          </button>
+        </div>
+        <div class="panel__body" id="focusBody"></div>
+      </section>
     </div>
 
     <script src="/app.js" type="module"></script>
