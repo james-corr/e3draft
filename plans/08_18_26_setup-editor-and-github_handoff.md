@@ -3,6 +3,9 @@ Date last edited: 08_18_26
 Date created: 08_18_26
 ---
 
+> **Partly superseded by `08_19_26_merged-plan.md` (08/19/26).** Still live for the GitHub push
+> commands and the git gotchas. Sequencing is set by the merged plan (GitHub goes last).
+
 # e3draft — watchlist, round notes, setup editor, and the parked GitHub push
 
 Covers the session titled `Opus 5 - 8.18 - e3draft setup editor and watchlist`.

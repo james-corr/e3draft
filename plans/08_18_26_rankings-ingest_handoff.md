@@ -3,6 +3,10 @@ Date last edited: 08_18_26
 Date created: 08_18_26
 ---
 
+> **Partly superseded by `08_19_26_merged-plan.md` (08/19/26).** The architecture, the safety gate
+> and the FFB reasoning below are still live reference. The "What's next" section is replaced, and
+> the FantasyPros recon it asks for has been done — see the merged plan.
+
 # e3draft — rankings ingest handoff (pick up here)
 
 Read this before touching `tools/ingest/`. It records what was built on 08/18/26, why it works

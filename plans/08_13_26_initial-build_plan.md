@@ -3,6 +3,9 @@ Date last edited: 08_13_26
 Date created: 08_13_26
 ---
 
+> **SUPERSEDED as a plan by `08_19_26_merged-plan.md` (08/19/26).** Kept for the file-structure
+> findings and reasoning it records, which are not written down anywhere else.
+
 # e3draft — initial build plan (draft, not yet discussed with James)
 
 ## Recap of the decision so far
