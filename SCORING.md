@@ -157,18 +157,20 @@ why the 85 LBs and 47 Ss in the pool matter more than the 34 DEs.
    **D and DB** — two slots, not three, and the first is open to any defensive player. The app
    follows `PRODUCT.md` today: MY TEAM renders LB 0/1, DE 0/1, S 0/1.
 
-   The 2025 draft supports the settings page. Across 12 teams it produced 10 LB, 10 S and 2 DE
-   — about **1.8 IDP picks per team, not 2.8**, and a LB/S mix rather than one of each of three
-   kinds. That is what one open `D` slot plus one `DB` slot looks like in practice: a linebacker
-   in the `D`, a safety in the `DB`. Three dedicated slots would have pulled roughly 12 DEs;
-   the draft took 2.
+   The 2025 draft supports the settings page, and the defensive ends are the tell: **three
+   dedicated slots would have pulled roughly 12 DEs across the league. The draft took 2.** That
+   is hard to explain under LB/DE/S and unremarkable under D + DB.
+
+   The full IDP count from `rosterObserved2025` in `data/league.json` is 10 LB, 10 S and 2 DE —
+   **22 IDP picks across 12 teams, 1.83 each, not the ~2.8 three slots would produce** — and a
+   LB/S mix rather than one of each of three kinds. That is what one open `D` plus one `DB`
+   looks like in practice: a linebacker in the `D`, a safety in the `DB`.
+
+   The same field lists `CB: 1`. That is Travis Hunter, who holds a WR row and a CB row in the
+   2025 pool and was drafted as a WR — not an IDP pick, and the reason the position counts sum
+   to 217 across 216 picks (`CLAUDE.md` rule 8 working, not a double count). He is not in the 22.
 
    Two corrections follow if James confirms: `PRODUCT.md`, and the MY TEAM slot list.
-
-   *Unrelated but found while checking:* `rosterObserved2025` in `data/league.json` lists
-   `S: 10` and no LB or DE at all, though the fixture plainly contains 10 LBs and 2 DEs.
-   Whatever generated that field dropped positions. It is a stale summary, not used by the
-   engine, but it should not be trusted as evidence for anything.
 
 4. **Keeper round cost.** Still undecided, unchanged. One keeper per team, costing a draft pick;
    which round the forfeited pick comes from has never been settled.
