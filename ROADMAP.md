@@ -4,36 +4,34 @@ Sequencing and reasoning live in `plans/08_19_26_merged-plan.md`. This is the ch
 
 ## Now
 
-Blocking, and only James can answer. Both came out of the Yahoo settings screenshots in
-`scoring/` (added 08/20/26) and both contradict `PRODUCT.md`:
+Blocking, and only James can answer. **`SCORING.md` is the record** — it transcribes the Yahoo
+settings page (screenshots in `scoring/`) and lists the conflicts with `PRODUCT.md` under its
+"Open questions". Summarised here only so this checklist is complete:
 
-1. **Is the league half-PPR or standard?** The Offense table in those screenshots has no
-   Receptions row at all. If that means 0 PPR, then both sources are being pulled at the wrong
-   scoring: the Fantasy Footballers set is `HALF (6pt QB)` and FantasyPros is
-   `half-point-ppr-cheatsheets.php`. It is a one-line change in each plus a re-run, but every
-   WR and pass-catching RB rank moves. Nothing else in the app changes.
-2. **Are the IDP roster slots LB/DE/S, or D + DB?** The screenshot reads
-   `QB, WR, WR, WR, RB, RB, TE, W/R/T, K, DEF, D, DB, BN x6, IR x2`. `PRODUCT.md` says
-   LB, DE and S. If it is D + DB, then draft day wants the best defender available plus a
-   defensive back, not one of each of three positions — which changes what "my team" shows
-   and what a roster-need warning would say.
+1. **Half-PPR or standard?** No reception row on the settings page. This picks the ranking set
+   on *both* sources — the Footballers' `HALF (6pt QB)` and FantasyPros'
+   `half-point-ppr-cheatsheets.php`. A one-line change in each plus a re-run, but every WR and
+   pass-catching RB rank moves.
+2. **IDP slots: LB/DE/S, or D + DB?** The app renders three slots today (`MY TEAM` shows
+   LB 0/1, DE 0/1, S 0/1), matching `PRODUCT.md`. The settings page says two.
+3. **18 rounds or 20?** `data/league.json` says `"rounds": 20`, and the computed state bears out
+   the mismatch: replaying the full 2025 board gives `totalPicks: 240` (20 x 12) against
+   `madePicks: 216` (18 x 12), leaving round 19 on the clock with nothing behind it.
+4. **Keeper round cost** — unchanged, still undecided. Blocks keeper pre-fill and nothing else.
 
 Then:
 
-3. **Connect the live board** — `DRAFT BOARD` tab, link-viewable sharing, Google API key,
+5. **Connect the live board** — `DRAFT BOARD` tab, link-viewable sharing, Google API key,
    `config.json`. ~15 minutes, needs James. Steps in `README.md`. Do this well before draft day
    so the leaguemate-types-a-name path is proven with slack.
-4. **Rewrite the 9 plans and 10 round notes** for this season, in the app's setup surface.
+6. **Rewrite the 9 plans and 10 round notes** for this season, in the app's setup surface.
    James's judgment, not a code task. The 2025 plans are carried forward as the starting point;
    67 of their 69 targets still resolve against the 2026 pool.
-5. **Publish to GitHub** — last, on purpose. Public repo, `.xlsx` stripped from history (one
+7. **Publish to GitHub** — last, on purpose. Public repo, `.xlsx` stripped from history (one
    workbook has a live Sheets URL inside it). Commands in
    `plans/archive/08_18_26_setup-editor-and-github_handoff.md`. Run `ListAgents` first.
-   Decide first whether `scoring/` belongs in the repo — it is currently untracked.
-
-Still needs James, blocking nothing but keeper pre-fill:
-
-- Confirm the keeper rule detail — which round the forfeited pick comes from
+   Decide first whether `scoring/` belongs in the repo — it is untracked binaries today, and
+   stripping history is exactly the step that exists to keep unintended files out.
 
 ## Next
 
