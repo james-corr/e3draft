@@ -5,6 +5,7 @@ import { DATA, ROOT, loadIngestConfig, stamp } from "./config.mjs";
 import { merge } from "./merge.mjs";
 import { validate } from "./validate.mjs";
 import * as ffb from "./ffb.mjs";
+import * as fantasypros from "./fantasypros.mjs";
 
 /** League size drives the ADP round.pick conversion, so it comes from league.json. */
 function readLeague() {
@@ -19,16 +20,39 @@ function readLeague() {
  * The yearly (or weekly) rankings refresh. This is the script extract_from_xlsx.py
  * has been pointing at since the migration.
  *
- *   node tools/ingest/refresh.mjs [--dry-run] [--season=2026] [--source=ffb]
+ *   node tools/ingest/refresh.mjs [--dry-run] [--season=2026] [--source=fantasypros,ffb]
  *
  * Pulls every configured source, merges them, validates the result, and only
  * then replaces data/players.<season>.json. Raw pulls are kept under
  * data/raw/<MM_DD_YY>/ so any run can be diffed or eyeballed after the fact.
  */
 
-const SOURCES = { ffb };
+/**
+ * Source order is priority order -- merge.mjs lets the first source to supply a
+ * field keep it. FantasyPros goes first because it is the base list: it names
+ * and ranks everyone including IDP, and its raw name is what forms each row's
+ * id, which is the format extract_from_xlsx.py established and the 2025 file
+ * still uses. The Fantasy Footballers then fill in the ffb_* columns.
+ */
+const SOURCES = { fantasypros, ffb };
+const DEFAULT_SOURCES = ["fantasypros", "ffb"];
 
-export async function refresh({ season, sources = ["ffb"], dryRun = false, log = console.log } = {}) {
+/**
+ * Two sources rank the same positions, so their per-position counts collide.
+ * Summing would double-count every quarterback; last-write-wins would check one
+ * source's floor against the other's count. Keep the highest, which asserts
+ * what we actually mean: at least one source returned a full table for this
+ * position. Same for the floors themselves -- the strictest one applies.
+ */
+function mergeExpectations(entries) {
+  const byPos = new Map();
+  for (const { pos, min } of entries) {
+    byPos.set(pos, Math.max(byPos.get(pos) ?? 0, min ?? 0));
+  }
+  return [...byPos].map(([pos, min]) => ({ pos, min }));
+}
+
+export async function refresh({ season, sources = DEFAULT_SOURCES, dryRun = false, log = console.log } = {}) {
   const cfg = await loadIngestConfig();
   season = season ?? cfg.season;
   cfg.league = readLeague();
@@ -51,23 +75,34 @@ export async function refresh({ season, sources = ["ffb"], dryRun = false, log =
       log,
     });
     pulled.push(out.rows);
-    Object.assign(result.counts, out.counts);
+    for (const [pos, n] of Object.entries(out.counts ?? {})) {
+      result.counts[pos] = Math.max(result.counts[pos] ?? 0, n);
+    }
     result.problems.push(...(out.problems ?? []));
     expected.push(...(out.positions ?? []));
     if (out.meta) result.meta = { ...(result.meta ?? {}), [name]: out.meta };
   }
 
-  const players = merge(pulled);
+  const collisions = [];
+  const players = merge(pulled, { warn: (m) => collisions.push(m) });
   result.total = players.length;
 
   const target = join(DATA, `players.${season}.json`);
-  const check = validate({ players, counts: result.counts, expected, previousFile: target });
+  const check = validate({
+    players,
+    counts: result.counts,
+    expected: mergeExpectations(expected),
+    previousFile: target,
+  });
 
   // A partial refresh must not quietly delete another source's work.
   // Running only --source=ffb over a file that also holds FantasyPros columns
   // would replace it with FFB-only rows, and the loss would be invisible until
   // draft day. Refuse instead, and say what to run.
-  for (const [field, owner] of [["pros_rank", "FantasyPros"]]) {
+  for (const [field, owner, flag] of [
+    ["pros_rank", "FantasyPros", "fantasypros"],
+    ["ffb_pos_rank", "Fantasy Footballers", "ffb"],
+  ]) {
     if (!existsSync(target)) continue;
     let had = 0;
     try {
@@ -79,14 +114,14 @@ export async function refresh({ season, sources = ["ffb"], dryRun = false, log =
     if (had > 0 && have === 0) {
       check.errors.push(
         `${target} currently holds ${owner} data for ${had} players, and this run pulled none. ` +
-          `Writing would delete it. Refresh every source together, or pass --source=ffb,<the ${owner} source>.`
+          `Writing would delete it. Refresh every source together, or add ${flag} to --source=.`
       );
       check.ok = false;
     }
   }
   result.ok = check.ok && result.problems.length === 0;
   result.errors = [...result.problems, ...check.errors];
-  result.warnings = check.warnings;
+  result.warnings = [...collisions, ...check.warnings];
 
   log(`\nmerged ${players.length} players across ${new Set(players.map((p) => p.pos)).size} positions`);
   for (const w of result.warnings) log(`  note: ${w}`);
@@ -125,7 +160,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   try {
     const out = await refresh({
       season: flag("season") ? Number(flag("season")) : undefined,
-      sources: flag("source")?.split(",") ?? ["ffb"],
+      sources: flag("source")?.split(",") ?? DEFAULT_SOURCES,
       dryRun: args.includes("--dry-run"),
     });
     process.exit(out.ok ? 0 : 1);
