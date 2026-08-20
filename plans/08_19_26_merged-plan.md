@@ -1,13 +1,22 @@
 ---
-Date last edited: 08_19_26
+Date last edited: 08_20_26
 Date created: 08_19_26
 ---
 
 # e3draft — the merged plan of attack
 
-**This supersedes all four earlier plans in this folder.** They are kept for the reasoning
-they record, but where they disagree with this document, this document wins. What each one
-still contributes is listed at the bottom under "What the old plans leave behind."
+**This supersedes all four earlier plans**, now moved to `plans/archive/`. They are kept for
+the reasoning they record, but where they disagree with this document, this document wins.
+What each one still contributes is listed at the bottom under "What the old plans leave behind."
+
+> **Status, 08/20/26.** Phases 1 and 2 are done and committed. Phase 3 onward is unchanged and
+> still waiting on James. Two things in this plan turned out to be wrong once the data was in
+> hand, and both are corrected in place below rather than quietly left standing: the
+> `player_eligibility` reading (it does not mean two-way players) and the claim that the
+> validation gate would block the first combined write (it warns; only a *shrinking* pool is an
+> error). A third thing surfaced that this plan never anticipated — James's Yahoo settings
+> screenshots landed in `scoring/` and contradict `PRODUCT.md` on both scoring and roster slots.
+> That is now the top of `ROADMAP.md`, because it decides which rankings we should be pulling.
 
 Written 08/19/26. Draft is **a month or more out** (James, this session), which is the reason
 this plan can be sequenced properly rather than triaged.
@@ -25,8 +34,8 @@ What's left is not really "building the app." It's four separate things:
 
 | # | Workstream | Blocked on | Size |
 |---|---|---|---|
-| 1 | Finish the rankings pull (FantasyPros) | nothing — **unblocked this session** | ~half a day |
-| 2 | Flip the app to the 2026 season | workstream 1 | ~an hour, plus a rehearsal |
+| 1 | Finish the rankings pull (FantasyPros) | ~~nothing~~ — **done 08/20/26** | ~half a day |
+| 2 | Flip the app to the 2026 season | ~~workstream 1~~ — **done 08/20/26** | ~an hour, plus a rehearsal |
 | 3 | Connect the live Google Sheet | James (~15 min of clicking) | ~30 min |
 | 4 | Publish to GitHub | nothing — sequenced last on purpose | ~10 min |
 
@@ -49,8 +58,8 @@ in the page HTML. No login. No nonce. No borrowed ranking engine. Two page fetch
 
 | Page | What it gives | Count | Tiers? |
 |---|---|---|---|
-| `rankings/half-point-ppr-cheatsheets.php` | QB/RB/WR/TE/DST/K, **half-PPR, draft mode** | 862 | yes |
-| `rankings/idp-cheatsheets.php` | **The entire IDP pool** | 204 | yes |
+| `rankings/half-point-ppr-cheatsheets.php` | QB/RB/WR/TE/DST/K, **half-PPR, draft mode** | 865 | yes |
+| `rankings/idp-cheatsheets.php` | **The entire IDP pool** | 203 | yes |
 
 The IDP page is the important one, and it lines up with the 2025 workbook almost exactly:
 
@@ -81,11 +90,13 @@ can move until this lands:
 
 ```
 2025 pool:  676 players   (481 offense/DST/K  +  195 IDP)
-2026 pool:  377 players   (377 offense/DST/K  +    0 IDP)   ← what's on disk now
+2026 pool:  377 players   (377 offense/DST/K  +    0 IDP)   ← what was on disk on 08/19
+2026 pool: 1069 players   (866 offense/DST/K  +  203 IDP)   ← what is on disk now
 ```
 
-Flipping today would show every IDP pick as unmatched on draft day, in a league that starts
-LB, DE and S.
+Flipping before this landed would have shown every IDP pick as unmatched on draft day. (Whether
+the league starts LB/DE/S or a generic D plus a DB is now itself an open question — see the
+`scoring/` screenshots under "Decisions I need from James".)
 
 ---
 
@@ -94,7 +105,7 @@ LB, DE and S.
 Ordered by dependency, then by risk. Each phase leaves the app in a working state — nothing
 here requires a big-bang switchover.
 
-### Phase 1 — The FantasyPros adapter *(no decisions needed, start here)*
+### Phase 1 — The FantasyPros adapter — **DONE 08/20/26**
 
 Write `tools/ingest/fantasypros.mjs` exporting the same `pull()` the Fantasy Footballers
 adapter exports, and add it to the `SOURCES` map. `merge.mjs` and `refresh.mjs` need no
@@ -109,23 +120,52 @@ Four things to get right, all of them known now rather than discovered later:
    by name if they ever read `Weekly` — that's the guard against silently ingesting in-season
    ranks next August.
 
-2. **The ±25% validation gate will trip, correctly.** Going from 377 to roughly 1,000 players
-   is a ~180% jump, and the gate exists to refuse changes that large. This is a true positive,
-   not a bug — the first combined write needs a deliberate, one-time override with eyes on the
-   numbers, not a loosened threshold. Loosening it permanently would disarm the one thing
-   standing between a bad pull and draft day.
+2. ~~**The ±25% validation gate will trip, correctly.**~~ **Wrong — no override was needed.**
+   Reading `validate.mjs` closely: only a pool that *shrinks* by more than 25% is an error. Any
+   move larger than ±25% in the other direction is a warning. The asymmetry is deliberate and
+   correct — a pull that lost a third of the players is a broken pull, while a pull that gained
+   690 is a second source arriving. It logged `player count moved +184% (377 -> 1069)` and
+   wrote. Nothing was loosened and nothing was overridden.
 
-3. **Two-way players fall out of `player_eligibility`.** FantasyPros already encodes them:
-   `CB,S`, `LB,DE`, `DT,DE`. That maps straight onto rule 8 — one human, one row per position,
-   drafting him clears every row. Travis Hunter has a real precedent here.
+3. ~~**Two-way players fall out of `player_eligibility`.**~~ **Wrong, and following it would
+   have fabricated data.** 60 rows carry a comma in `player_eligibility` — but they are
+   overwhelmingly `LB,DE`, `DE,LB`, `DT,DE` and `CB,S` on ordinary edge rushers and safeties.
+   That is FantasyPros saying which slot a defender fills across *different league formats*, not
+   saying he plays two positions. Micah Parsons is `LB,DE`; he is one human.
+
+   Expanding eligibility into rows would have minted about 56 phantom defenders, and since
+   FantasyPros publishes exactly one rank per player (Parsons is LB54 and has no DE rank), every
+   phantom would have needed an invented number — rule 5, straight through the middle.
+
+   So position comes from `player_position_id`: one row in, one row out. **Rule 8 still holds and
+   needs no help.** A genuine two-way player appears on *both* pages with a real rank on each, so
+   he gets two rows out of real data. That is exactly how Travis Hunter came to hold a WR row and
+   a CB row in 2025 — verified in the file. In 2026 he is on the offense page only
+   (`WR,CB`, WR68) because FantasyPros no longer ranks him as a defender, so this year he is
+   correctly one row. The raw string is carried through on a new `eligibility` field so the
+   ambiguity lives in the data rather than only in a comment.
 
 4. **Two 2025 fields aren't in these payloads:** `sos` (strength of schedule) and
    `ecr_vs_adp`. They live on different FantasyPros views. Worth a look, but they're
    nice-to-have colour — don't let them hold up the pool itself.
 
 **Deliverable:** `npm run refresh` produces a `players.2026.json` with IDP in it, past the gate.
+**Met.** 1069 players, LB 88 / DE 42 / S 41 / DT 17 / CB 15. The in-season trap was tested
+directly rather than assumed: `lb.php`, `dl.php` and `db.php` were fetched and all three came
+back HTTP 200 as `type: "Weekly"`, week 1, with zero tiers across all 270 players — and the
+adapter's guard refused them by name when fed one.
 
-### Phase 2 — Flip to 2026 *(needs Phase 1)*
+Two bugs turned up that only exist once there is a second source, both fixed:
+
+- `refresh` merged per-position counts with `Object.assign`, so with two sources ranking the
+  same positions, one source's floor was being checked against the other's count. Counts and
+  floors now take the max.
+- `merge` silently folded two different humans sharing a name and position into one row —
+  FantasyPros 2026 ranks two separate Isaiah Williamses at WR. One row is still all the
+  `name|pos` id format can hold, but rule 1 says the loss cannot be silent, so every collapse is
+  now reported on the refresh.
+
+### Phase 2 — Flip to 2026 — **DONE 08/20/26**
 
 - `"season": 2026` in `config.json`
 - Create `branches.2026.json` and `inventory.2026.json`. Missing files degrade gracefully, but
@@ -134,6 +174,14 @@ Four things to get right, all of them known now rather than discovered later:
 - **Then do a real dress rehearsal**: replay the 2025 board against the 2026 pool with
   `"source": "local"`. Expect unmatched picks — players who retired or changed teams — and
   that's the point. It proves the matcher surfaces them loudly instead of dropping them.
+
+**Rehearsal result.** 216 picks read, 212 matched, 4 surfaced: Ricky Pearsall (6.01), Marquise
+Brown (11.09), Amari Cooper (13.04), Adam Thielen (17.12). The two Browns/Coopers came with
+surname suggestions rather than a guess; Pearsall is genuinely absent from FantasyPros' 2026
+list, which the raw HTML confirms. Against the 2025 pool this same board matched 216/216, so the
+four are exactly the players who left the league — surfaced, not dropped. 857 available across
+all eleven positions, LB banding into real tiers. 67 of the 69 carried-forward plan targets
+still resolve; the two that don't are Pearsall and James's own "CHECK LATE ROUNDERS" placeholder.
 
 ### Phase 3 — Connect the live sheet *(James's ~15 minutes)*
 
@@ -184,9 +232,27 @@ Only two, and one of them is small.
    so it stays a hole until James says. It blocks pre-filling keeper picks on the board, and
    nothing else.
 
-2. **`sos` and `ecr_vs_adp`** — worth chasing down on other FantasyPros pages, or drop them?
-   They were in the 2025 file. My recommendation: **drop them for now**, ship the pool, and add
-   them later if their absence is actually felt on the board. They're context, not decisions.
+2. ~~**`sos` and `ecr_vs_adp`**~~ — **taken as recommended: dropped for now**, left null. The
+   focus card already filters null rows, so they simply don't render. Deriving `ecr_vs_adp` from
+   the Fantasy Footballers' ADP would be a made-up cross-source number wearing a real column's
+   name. Parked under Later in `ROADMAP.md`; say the word if their absence is felt.
+
+3. **NEW, and it outranks both of the above: the `scoring/` screenshots contradict
+   `PRODUCT.md`.** They landed mid-session on 08/20/26 and they are authoritative Yahoo
+   settings, but they were not discussed, so nothing was changed on their account.
+
+   - **Scoring.** The Offense table has no Receptions row at all. Yahoo lists the categories a
+     league actually scores, so that reads as **standard, not half-PPR** — against `PRODUCT.md`
+     line 58, which records half-PPR as confirmed by James on 08/18/26. It matters because it
+     picks the ranking set on *both* sources: the Footballers' `HALF (6pt QB)` and FantasyPros'
+     `half-point-ppr-cheatsheets.php`. Everything else in the screenshots agrees with the doc,
+     including the 6-point passing touchdown.
+   - **Roster slots.** `QB, WR, WR, WR, RB, RB, TE, W/R/T, K, DEF, D, DB, BN x6, IR x2` —
+     a generic **D** and a **DB**, where `PRODUCT.md` line 59 says LB, DE and S. If that is
+     right, draft day wants the best defender available plus a defensive back, not one each of
+     three positions.
+
+   Both are one-line changes plus a re-run. Neither is safe to assume. Rule 5.
 
 ---
 
@@ -226,6 +292,7 @@ Only two, and one of them is small.
 
 ## The short version
 
-One real piece of engineering left (FantasyPros, now de-risked), one season flip, fifteen
-minutes of Google setup, an afternoon of James's own judgment on the plans, and a careful
-publish. In that order. There is a month, and the sequence needs about a week of actual work.
+~~One real piece of engineering left~~ — **the engineering is done.** FantasyPros is in, the
+season is flipped, and 2026 has IDP for the first time. What remains is all James's: answer the
+two questions the `scoring/` screenshots raise, fifteen minutes of Google setup, an afternoon of
+judgment on the plans, and a careful publish. In that order, with a month of runway.
