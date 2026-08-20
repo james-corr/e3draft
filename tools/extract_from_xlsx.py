@@ -117,11 +117,17 @@ def extract_league(wb):
         "rounds": ROUNDS,
         "snake": True,
         # Roster requirements are NOT in either workbook -- James is confirming
-        # these separately. Counts below are observed from the 2025 draft, which
-        # is evidence of the rules, not the rules themselves.
-        "rosterObserved2025": {
-            "RB": 57, "WR": 66, "QB": 16, "TE": 15, "DST": 11, "K": 11, "S": 10,
-        },
+        # these separately.
+        #
+        # This used to emit a hand-typed rosterObserved2025 dict. Every count in
+        # it was wrong, and it omitted LB, DE and CB entirely -- which mattered,
+        # because the missing linebackers made the 2025 draft look like it had no
+        # IDP run at all. Nothing computed those numbers; someone eyeballed them.
+        #
+        # Left empty on purpose. The real counts are derived from the fixture in
+        # data/league.json, where the board and the player pool both live, rather
+        # than frozen into a migration script that cannot see either.
+        "rosterObserved2025": {},
         "rosterSlots": None,
         "scoring": None,
         "keepers": None,

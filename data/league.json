@@ -17,14 +17,26 @@
   "myTeam": "Jimmy",
   "rounds": 20,
   "snake": true,
+  "_rosterObserved2025": [
+    "Positions actually drafted in 2025, counted from data/board.local.json against",
+    "data/players.2025.json with lib/players.js normalizeName. Evidence of the roster",
+    "rules, not the rules themselves -- rosterSlots below is still the unanswered one.",
+    "Re-derive after any pool change; these were hand-typed during the migration and",
+    "were wrong in every position until 08/20/26.",
+    "Sums to 217 across 216 picks because Travis Hunter holds two rows (WR and CB) and",
+    "one pick fills both -- that is rule 8 working, not a double count to fix."
+  ],
   "rosterObserved2025": {
-    "RB": 57,
-    "WR": 66,
-    "QB": 16,
-    "TE": 15,
-    "DST": 11,
-    "K": 11,
-    "S": 10
+    "WR": 72,
+    "RB": 62,
+    "QB": 18,
+    "TE": 17,
+    "DST": 13,
+    "K": 12,
+    "LB": 10,
+    "S": 10,
+    "DE": 2,
+    "CB": 1
   },
   "rosterSlots": null,
   "scoring": null,
