@@ -116,7 +116,8 @@ Two more from `SCORING.md` (08/20/26), both James-only calls:
   normally means 0 per catch. `PRODUCT.md` says half-PPR, confirmed 08/18/26. This picks which
   UDK ranking set gets pulled, so it has to be settled before this year's rankings go in.
 - **Is it 18 rounds or 20?** The roster has 18 draftable spots and the 2025 fixture holds
-  exactly 216 picks (18 × 12). The docs say 20.
+  exactly 216 picks (18 × 12). The docs and `data/league.json` say 20, and the app shows it:
+  a full replay returns 240 total picks against 216 made, ending with round 19 on the clock.
 
 ## Where things live
 

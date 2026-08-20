@@ -14,8 +14,9 @@ conflicts are listed at the bottom under "Open questions", unresolved on purpose
 rule 5: don't invent league facts).
 
 Nothing in the app reads these numbers today. `lib/state.js` counts players by position and
-never scores anything, so this is documentation the app can be built against, not config it
-already consumes.
+never scores anything. `data/league.json` already holds `"rosterSlots": null` and
+`"scoring": null` waiting to be filled — this file is what fills them, once the open questions
+below are settled. Until then it is documentation to build against, not config in use.
 
 ---
 
@@ -140,15 +141,34 @@ why the 85 LBs and 47 Ss in the pool matter more than the 34 DEs.
    ranks materially. Needs James to check the Yahoo page for a "Receptions" line before any
    ranking pull is trusted.
 
-2. **Round count.** `PRODUCT.md` and `CONTEXT.md` say **20 rounds**. The roster has **18
-   draftable spots** (12 starters + 6 bench; IR is in-season only), and `data/board.local.json`
-   holds exactly 216 picks — 18 rounds × 12 teams. 18 looks like the real number and 20 looks
-   like the error, but the keeper rule interacts with this, so it stays flagged rather than
-   corrected.
+2. **Round count.** `PRODUCT.md` and `CONTEXT.md` say **20 rounds**, and `data/league.json`
+   carries `"rounds": 20`. The roster has **18 draftable spots** (12 starters + 6 bench; IR is
+   in-season only), and `data/board.local.json` holds exactly 216 picks — 18 rounds × 12 teams.
+
+   The app already shows the symptom: replaying the full 2025 board returns `totalPicks: 240`
+   against `madePicks: 216`, and the board ends with round 19 on the clock for a draft that was
+   over. Two rounds exist in the app that no pick will ever fill.
+
+   18 is very likely the real number, but the keeper rule interacts with the count, so it stays
+   flagged rather than corrected. Fixing it is a one-value change to `rounds` in
+   `data/league.json`.
 
 3. **IDP slots.** `PRODUCT.md` says the IDP starters are **LB, DE, S**. The settings page says
-   **D and DB** — two slots, not three, and the first is open to any defensive player. This
-   file is the newer observation; `PRODUCT.md` should be corrected once James confirms.
+   **D and DB** — two slots, not three, and the first is open to any defensive player. The app
+   follows `PRODUCT.md` today: MY TEAM renders LB 0/1, DE 0/1, S 0/1.
+
+   The 2025 draft supports the settings page. Across 12 teams it produced 10 LB, 10 S and 2 DE
+   — about **1.8 IDP picks per team, not 2.8**, and a LB/S mix rather than one of each of three
+   kinds. That is what one open `D` slot plus one `DB` slot looks like in practice: a linebacker
+   in the `D`, a safety in the `DB`. Three dedicated slots would have pulled roughly 12 DEs;
+   the draft took 2.
+
+   Two corrections follow if James confirms: `PRODUCT.md`, and the MY TEAM slot list.
+
+   *Unrelated but found while checking:* `rosterObserved2025` in `data/league.json` lists
+   `S: 10` and no LB or DE at all, though the fixture plainly contains 10 LBs and 2 DEs.
+   Whatever generated that field dropped positions. It is a stale summary, not used by the
+   engine, but it should not be trusted as evidence for anything.
 
 4. **Keeper round cost.** Still undecided, unchanged. One keeper per team, costing a draft pick;
    which round the forfeited pick comes from has never been settled.
