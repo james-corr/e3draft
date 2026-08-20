@@ -1,5 +1,5 @@
 ---
-Date last edited: 08_18_26
+Date last edited: 08_20_26
 Date created: 08_13_26
 ---
 
@@ -47,6 +47,14 @@ board-tab generator, and the migration off the old workbooks.
   plans for this season" a job James can do himself.
 - Fixed a real one found while measuring: the page scrolled 44px sideways at phone widths.
 
+**Added 08/20/26:**
+- **The real league settings are written down.** `SCORING.md` transcribes the Yahoo settings
+  page — every scoring value for offense, kickers, team DEF and IDP, plus the exact roster
+  slots. Screenshots of the source are in `scoring/`. Nothing in the app reads these numbers
+  yet; `lib/state.js` only counts positions.
+- It surfaced **three conflicts with `PRODUCT.md` that need James, not code** — see "Open
+  questions" at the bottom of `SCORING.md`. They are listed under "What's left" below.
+
 **What's not connected yet:** the live sheet. Until James does the one-time setup the app reads
 `data/board.local.json` — the complete 2025 draft as a fixture — so it behaves exactly as it
 will on the day. Steps are in `README.md`.
@@ -65,7 +73,10 @@ See `ROADMAP.md` for state and `PRODUCT.md` for the product record.
 
 **League facts, captured from James (08/14/26) — these were in neither workbook:**
 - Half-PPR. 12 teams, **20 rounds** (the 2025 board only ever got 18 filled), snake.
-- Starting lineup: 1 QB, 2 RB, **3 WR**, 1 TE, 1 FLEX, plus DST, K, and IDP (LB, DE, S).
+- Starting lineup: 1 QB, 2 RB, **3 WR**, 1 TE, 1 FLEX (W/R/T), plus DST, K and IDP. The Yahoo
+  settings page (08/20/26) says the IDP starters are **D and DB — two slots, not the three
+  (LB, DE, S) recorded here and in `PRODUCT.md`**. `SCORING.md` has the observed truth; the
+  conflict is unresolved.
 - One keeper per team, costing a draft pick. **Which round the forfeited pick comes from is
   still undecided — do not invent it.**
 - James is "Jimmy", drafting 10th.
@@ -100,12 +111,20 @@ keeper round rule, swap in this year's rankings, and rewrite the 9 plans and the
 this season (they hold 2025's targets today). The last one is now done in the app's setup surface
 — the icon in the PLANS header.
 
+Two more from `SCORING.md` (08/20/26), both James-only calls:
+- **Is the league actually half-PPR?** The Yahoo settings page shows no reception row, which
+  normally means 0 per catch. `PRODUCT.md` says half-PPR, confirmed 08/18/26. This picks which
+  UDK ranking set gets pulled, so it has to be settled before this year's rankings go in.
+- **Is it 18 rounds or 20?** The roster has 18 draftable spots and the 2025 fixture holds
+  exactly 216 picks (18 × 12). The docs say 20.
+
 ## Where things live
 
 | What | Where |
 |---|---|
 | How to run it, and the one-time Google setup | `README.md` |
 | Product record — users, league rules, constraints | `PRODUCT.md` |
+| Scoring values and roster slots, as set in Yahoo | `SCORING.md` (screenshots in `scoring/`) |
 | House rules for working in here | `CLAUDE.md` |
 | State | `ROADMAP.md` |
 | The engine | `lib/state.js` |
