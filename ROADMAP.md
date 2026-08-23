@@ -25,11 +25,10 @@ Then:
 4. **Publish to GitHub** — last, on purpose. Public repo, `.xlsx` stripped from history (one
    workbook has a live Sheets URL inside it). Commands in
    `plans/archive/08_18_26_setup-editor-and-github_handoff.md`. Run `ListAgents` first.
-   Decide first whether `scoring/` belongs in the repo. The four screenshots are **committed**
-   as of 08/20/26 (222d493), so removing them is a history rewrite across both sessions' work,
-   not a `.gitignore` line. They are James's own league settings page — the provenance for
-   every number in `SCORING.md` — and carry no credentials. Still his call, and stripping
-   history is exactly the step that exists to keep unintended files out.
+   `scoring/` is **cleared to publish** — James, 08/23/26. The four screenshots stay in the
+   repo as the provenance for every number in `SCORING.md`; they are his own league settings
+   page and carry no credentials. Nothing to strip and no history rewrite. The `.xlsx` removal
+   is still required and is unrelated: that one has a live Sheets URL inside it.
 
 ## Next
 
