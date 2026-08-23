@@ -417,9 +417,15 @@ const STARTERS = [
 ];
 
 /* Count each pick against the narrowest slot it still fits, so a safety fills
-   DB before the open D and a back fills RB before the flex. Greedy is right
-   because the eligibility lists nest: anything that fits a narrow slot also
-   fits the wider one behind it, never the reverse. */
+   DB before the open D and a back fills RB before the flex.
+
+   Narrowest-first greedy is provably right here because the eligibility lists
+   nest: DB{CB,S} sits inside D{DE,DT,LB,CB,S}, each skill position sits inside
+   W/R/T{WR,RB,TE}, and those two chains never overlap. That is the property to
+   preserve -- a new slot whose positions partly overlap an existing one's,
+   rather than nesting inside or staying clear of it, breaks the guarantee and
+   needs a real assignment pass instead of this loop. Sorting by breadth means
+   the fill order falls out of the data and no one has to maintain it. */
 function fillSlots(picks) {
   const have = new Map(STARTERS.map((x) => [x.slot, 0]));
   const narrowestFirst = [...STARTERS].sort((a, b) => a.pos.length - b.pos.length);
