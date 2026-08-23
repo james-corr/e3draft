@@ -79,7 +79,9 @@ touching the interface, and keep it accurate.
 partway; `"mock"` reads `data/board.mock.json` and turns on the in-app pick box (`lib/mock.js`,
 `/api/mock/*`), which is how a mock draft is run with no Google setup; `"sheet"` is the real
 thing. The pick box is mock-only and the server enforces that — nothing may write picks while
-the app is pointed at the sheet, where the leaguemates' typing is the source of truth. `?static=1` on the URL renders one snapshot instead of opening the SSE stream, which is
+the app is pointed at the sheet, where the leaguemates' typing is the source of truth.
+
+`?static=1` on the URL renders one snapshot instead of opening the SSE stream, which is
 how headless screenshots are taken — the live page never finishes loading, so capture hangs
 without it. `?view=`, `?exposure=`, `?focus=<player id>` and `?setup=1` deep-link any screen.
 
