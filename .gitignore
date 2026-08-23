@@ -17,6 +17,10 @@ out/
 # One-save-back copy the plan editor leaves behind
 data/*.json.bak
 
+# Mock-draft scratch board, written by the in-app pick box. Regenerates itself;
+# the real fixture is data/board.local.json and that one IS committed.
+data/board.mock.json
+
 # Build-time screenshots
 .impeccable/shots/
 .impeccable/questions/

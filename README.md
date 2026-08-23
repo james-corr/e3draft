@@ -75,6 +75,28 @@ plans and round notes are edited directly — no JSON, no spreadsheet.
   `data/branches.<year>.json.bak`, and rows missing a round or a name are dropped with a count
   reported back rather than vanishing quietly.
 
+## Mock drafts, without any Google setup
+
+Set `"source": "mock"` in `config.json` and a **pick entry strip** appears above the bottom
+rail. Type the name of whoever just went, press enter, and it lands on the board — same
+matcher, same engine, same everything the real draft uses. The REC lamp in the top-left reads
+**MOCK** the whole time, so a rehearsal can never be mistaken for the real thing.
+
+- It tells you who is on the clock, so you always know whose pick you are typing.
+- It echoes who the name actually resolved to. `dk metcalf` landing on DK Metcalf is how you
+  learn to trust the matcher before it matters.
+- A name it cannot place is still recorded, and shows up as an unmatched pick — exactly what
+  happens when a leaguemate fat-fingers a name into the real sheet. It is not rejected.
+- **UNDO** takes back the last pick.
+
+Picks go to `data/board.mock.json`, which is gitignored and separate from
+`data/board.local.json` — the 2025 draft kept as a replay fixture. A mock can never overwrite it.
+
+The pick box is deliberately unavailable when `"source": "sheet"`, and the server refuses
+`/api/mock/*` in that mode rather than trusting the UI to hide the control. On draft day the
+leaguemates' typing in the sheet is the source of truth, and nothing local should be able to
+write over it.
+
 ## One-time setup: connecting the live board
 
 Until this is done the app runs off `data/board.local.json` (the 2025 draft, as a test fixture),

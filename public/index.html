@@ -156,6 +156,29 @@
       </main>
 
       <!-- ========================================================= bottom rail -->
+      <!-- ========================================================= pick entry -->
+      <!-- Mock-only. A camcorder has a test-record mode that writes to the tape
+           without pretending to be the take; this is that. Hidden entirely when
+           the app is reading the real sheet, where the leaguemates' typing is
+           the source of truth and nothing here should be able to write. -->
+      <form class="entry" id="entry" hidden autocomplete="off">
+        <span class="entry__tag">MOCK</span>
+        <span class="entry__at">
+          <span class="entry__slot seg" id="entrySlot">—</span>
+          <span class="entry__team" id="entryTeam">—</span>
+        </span>
+        <input
+          class="entry__input"
+          id="entryInput"
+          type="text"
+          placeholder="type the pick, press enter"
+          aria-label="Enter the pick that was just made"
+          spellcheck="false"
+        />
+        <p class="entry__echo" id="entryEcho" role="status" aria-live="polite"></p>
+        <button class="entry__btn" type="button" id="entryUndo">UNDO</button>
+      </form>
+
       <footer class="rail rail--bottom">
         <div class="rail__group">
           <span class="readout readout--stack">

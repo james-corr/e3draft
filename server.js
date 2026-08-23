@@ -8,6 +8,7 @@ import { loadPlayers, resolvePick } from "./lib/players.js";
 import { readBoard } from "./lib/board.js";
 import { computeState } from "./lib/state.js";
 import { createStore } from "./lib/store.js";
+import * as mock from "./lib/mock.js";
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
 const DATA = join(ROOT, "data");
@@ -98,6 +99,7 @@ function payload() {
     ok: !lastError,
     error: lastError,
     source: config.source,
+    canEnterPicks: config.source === "mock",
     state: current,
   });
 }
@@ -245,6 +247,41 @@ const server = createServer(async (req, res) => {
   // --- does this typed name land on a real player? -------------------------
   // The editor asks the server rather than matching names itself, so a plan
   // target is judged by exactly the matcher that will read it on draft day.
+  // --- the mock board's pick box -----------------------------------------
+  // Only reachable when config.source is "mock". Refusing here rather than
+  // hiding the control in the client is the part that matters: nothing should
+  // be able to write picks while the app is pointed at the real sheet, where
+  // the leaguemates' typing is the source of truth.
+  if (path.startsWith("/api/mock/") && req.method === "POST") {
+    if (config.source !== "mock") {
+      return sendJson(res, 409, {
+        error: `the pick box only works on a mock board. config.json has source:"${config.source}".`,
+      });
+    }
+    const action = path.slice("/api/mock/".length);
+    try {
+      if (action === "pick") {
+        const { name } = await readBody(req);
+        const out = mock.addPick(DATA, league, name, (text) => resolvePick(pool, text));
+        await tick();
+        return sendJson(res, 200, { ok: true, ...out, next: mock.nextOpen(mock.loadGrid(DATA, league), league) });
+      }
+      if (action === "undo") {
+        const removed = mock.undoPick(DATA, league);
+        await tick();
+        return sendJson(res, 200, { ok: true, removed, next: mock.nextOpen(mock.loadGrid(DATA, league), league) });
+      }
+      if (action === "reset") {
+        mock.resetBoard(DATA, league);
+        await tick();
+        return sendJson(res, 200, { ok: true, next: mock.nextOpen(mock.loadGrid(DATA, league), league) });
+      }
+      return sendJson(res, 404, { error: `unknown mock action "${action}"` });
+    } catch (err) {
+      return sendJson(res, 400, { error: err.message });
+    }
+  }
+
   if (path === "/api/resolve" && req.method === "POST") {
     try {
       const { names } = await readBody(req);
@@ -311,7 +348,13 @@ async function boot() {
     console.log("  E3 Draft — command center");
     console.log(`  http://localhost:${PORT}`);
     console.log("");
-    console.log(`  board source : ${config.source === "sheet" ? `Google Sheet (${config.tabName})` : "data/board.local.json"}`);
+    const sourceLabel =
+      config.source === "sheet"
+        ? `Google Sheet (${config.tabName})`
+        : config.source === "mock"
+          ? `data/${mock.MOCK_FILE} — mock draft, pick box on`
+          : "data/board.local.json";
+    console.log(`  board source : ${sourceLabel}`);
     console.log(`  poll         : every ${config.pollMs}ms`);
     console.log(`  players      : ${pool.players.length}`);
     console.log(`  you          : ${league.myTeam}`);

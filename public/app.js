@@ -45,6 +45,12 @@ const el = {
   focusName: $("focusName"),
   focusBody: $("focusBody"),
   planEdit: $("planEdit"),
+  entry: $("entry"),
+  entrySlot: $("entrySlot"),
+  entryTeam: $("entryTeam"),
+  entryInput: $("entryInput"),
+  entryEcho: $("entryEcho"),
+  entryUndo: $("entryUndo"),
 };
 
 /* Authored SVG, one stroke weight. The focus-lock mark is the viewfinder's own
@@ -116,10 +122,17 @@ function renderRails(payload) {
   if (!payload.ok) {
     el.lamp.dataset.state = "error";
     el.lampText.textContent = "NO SIG";
+  } else if (payload.canEnterPicks) {
+    // Reading a mock board. Say so in the one place that is always on screen,
+    // so a rehearsal can never be mistaken for the real draft.
+    el.lamp.dataset.state = "mock";
+    el.lampText.textContent = "MOCK";
   } else {
     el.lamp.dataset.state = "live";
     el.lampText.textContent = "REC";
   }
+
+  el.entry.hidden = !payload.canEnterPicks;
 
   if (!s) return;
 
@@ -139,6 +152,13 @@ function renderRails(payload) {
     el.clockTeam.textContent = "—";
     el.clockTeam.dataset.me = "false";
     el.counter.textContent = "R--:P--";
+  }
+
+  if (!el.entry.hidden) {
+    el.entrySlot.textContent = onTheClock ? onTheClock.label : "—";
+    el.entryTeam.textContent = onTheClock ? onTheClock.team : "board full";
+    el.entryInput.disabled = !onTheClock;
+    el.entryUndo.disabled = madePicks === 0;
   }
 
   el.overall.textContent = `#${String(madePicks + 1).padStart(3, "0")} / ${totalPicks}`;
@@ -856,6 +876,63 @@ document.addEventListener("keydown", (e) => {
 });
 
 initSetup();
+
+/* -------------------------------------------------------------- pick entry */
+/* Mock-only, and the server enforces that independently — this control is
+   hidden when the app reads the sheet, but hiding a button is not a guarantee,
+   so /api/mock/* refuses on the server too. */
+
+function echo(kind, text) {
+  el.entryEcho.dataset.kind = kind;
+  el.entryEcho.textContent = text;
+}
+
+async function postMock(action, body) {
+  const res = await fetch(`/api/mock/${action}`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body || {}),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json.error || `mock ${action} failed`);
+  return json;
+}
+
+el.entry.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const name = el.entryInput.value.trim();
+  if (!name) return;
+
+  el.entryInput.value = "";
+  try {
+    const out = await postMock("pick", { name });
+    if (out.matched.length) {
+      // Echo who it actually landed on rather than what was typed. "dk metcalf"
+      // resolving to DK Metcalf is the matcher working, and seeing it is how you
+      // learn to trust it before draft day.
+      const who = out.matched.map((m) => `${m.name} · ${m.pos}${m.team ? ` · ${m.team}` : ""}`).join("  +  ");
+      echo("hit", `${out.at.label} ${who}`);
+    } else {
+      echo(
+        "miss",
+        `${out.at.label} "${out.text}" — no match${out.suggestion ? `. did you mean ${out.suggestion}?` : ""}`
+      );
+    }
+  } catch (err) {
+    echo("error", err.message);
+  }
+  el.entryInput.focus();
+});
+
+el.entryUndo.addEventListener("click", async () => {
+  try {
+    const out = await postMock("undo");
+    echo("idle", `took back ${out.removed.label} "${out.removed.text}"`);
+  } catch (err) {
+    echo("error", err.message);
+  }
+  el.entryInput.focus();
+});
 
 /* ------------------------------------------------------------------ stream */
 

@@ -50,6 +50,13 @@ Then:
 
 ## Shipped
 
+- **Mock drafts** (08/23/26): `"source": "mock"` turns on a pick entry strip above the bottom
+  rail — type who just went, press enter, it lands on the board through the real matcher and
+  the real engine. The REC lamp reads MOCK so a rehearsal cannot be mistaken for the real
+  draft. Unmatched names are recorded and surfaced rather than rejected, because that is what
+  the sheet does. Writes `data/board.mock.json`, never the 2025 fixture, and the server refuses
+  `/api/mock/*` whenever the app is pointed at the sheet.
+
 - **2026 season, IDP included** (08/20/26): `players.2026.json` holds 1069 players across all
   eleven positions, where it held 377 offense-only. `branches.2026.json` carried forward from
   2025. Dress rehearsal replayed the full 2025 board against the 2026 pool: 212 of 216 picks
