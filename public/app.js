@@ -399,10 +399,40 @@ function renderPlans(s) {
 
 /* ---------------------------------------------------------------- my team */
 
+/* The twelve starting slots, from SCORING.md. Three of them take more than one
+   position -- the flex and both IDP slots -- so a slot carries the list of what
+   can fill it rather than a single position. This readout used to show
+   LB/DE/S and no flex at all, which was the old PRODUCT.md lineup rather than
+   the league's. */
 const STARTERS = [
-  ["QB", 1], ["RB", 2], ["WR", 3], ["TE", 1],
-  ["DST", 1], ["K", 1], ["LB", 1], ["DE", 1], ["S", 1],
+  { slot: "QB", need: 1, pos: ["QB"] },
+  { slot: "WR", need: 3, pos: ["WR"] },
+  { slot: "RB", need: 2, pos: ["RB"] },
+  { slot: "TE", need: 1, pos: ["TE"] },
+  { slot: "W/R/T", need: 1, pos: ["WR", "RB", "TE"] },
+  { slot: "K", need: 1, pos: ["K"] },
+  { slot: "DEF", need: 1, pos: ["DST"] },
+  { slot: "D", need: 1, pos: ["DE", "DT", "LB", "CB", "S"] },
+  { slot: "DB", need: 1, pos: ["CB", "S"] },
 ];
+
+/* Count each pick against the narrowest slot it still fits, so a safety fills
+   DB before the open D and a back fills RB before the flex. Greedy is right
+   because the eligibility lists nest: anything that fits a narrow slot also
+   fits the wider one behind it, never the reverse. */
+function fillSlots(picks) {
+  const have = new Map(STARTERS.map((x) => [x.slot, 0]));
+  const narrowestFirst = [...STARTERS].sort((a, b) => a.pos.length - b.pos.length);
+  for (const p of picks) {
+    for (const x of narrowestFirst) {
+      if (have.get(x.slot) < x.need && x.pos.includes(p.pos)) {
+        have.set(x.slot, have.get(x.slot) + 1);
+        break;
+      }
+    }
+  }
+  return have;
+}
 
 function renderTeam(s) {
   const r = s.myRoster;
@@ -411,10 +441,11 @@ function renderTeam(s) {
     return;
   }
 
-  const slots = STARTERS.map(([pos, need]) => {
-    const have = r.counts[pos] || 0;
+  const filled = fillSlots(r.picks);
+  const slots = STARTERS.map(({ slot, need }) => {
+    const have = filled.get(slot);
     return `<span class="slot${have < need ? " slot--unfilled" : ""}">
-      <span class="slot__k">${pos}</span>
+      <span class="slot__k">${slot}</span>
       <span class="slot__v">${have}/${need}</span>
     </span>`;
   }).join("");

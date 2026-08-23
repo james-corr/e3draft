@@ -38,7 +38,191 @@
     "DE": 2,
     "CB": 1
   },
-  "rosterSlots": null,
-  "scoring": null,
-  "keepers": null
+  "rosterSlots": [
+    {
+      "slot": "QB",
+      "need": 1,
+      "pos": [
+        "QB"
+      ]
+    },
+    {
+      "slot": "WR",
+      "need": 3,
+      "pos": [
+        "WR"
+      ]
+    },
+    {
+      "slot": "RB",
+      "need": 2,
+      "pos": [
+        "RB"
+      ]
+    },
+    {
+      "slot": "TE",
+      "need": 1,
+      "pos": [
+        "TE"
+      ]
+    },
+    {
+      "slot": "W/R/T",
+      "need": 1,
+      "pos": [
+        "WR",
+        "RB",
+        "TE"
+      ]
+    },
+    {
+      "slot": "K",
+      "need": 1,
+      "pos": [
+        "K"
+      ]
+    },
+    {
+      "slot": "DEF",
+      "need": 1,
+      "pos": [
+        "DST"
+      ]
+    },
+    {
+      "slot": "D",
+      "need": 1,
+      "pos": [
+        "DE",
+        "DT",
+        "LB",
+        "CB",
+        "S"
+      ]
+    },
+    {
+      "slot": "DB",
+      "need": 1,
+      "pos": [
+        "CB",
+        "S"
+      ]
+    }
+  ],
+  "scoring": {
+    "offense": {
+      "passingYards": {
+        "per": 25,
+        "point": 1,
+        "bonus": {
+          "at": 300,
+          "points": 3
+        }
+      },
+      "passingTouchdown": 6,
+      "interception": -2,
+      "rushingYards": {
+        "per": 10,
+        "point": 1,
+        "bonus": {
+          "at": 150,
+          "points": 3
+        }
+      },
+      "rushingTouchdown": 6,
+      "reception": 0.5,
+      "receivingYards": {
+        "per": 10,
+        "point": 1,
+        "bonus": {
+          "at": 150,
+          "points": 3
+        }
+      },
+      "receivingTouchdown": 6,
+      "returnTouchdown": 6,
+      "twoPointConversion": 2,
+      "fumbleLost": -2,
+      "offensiveFumbleReturnTouchdown": 6
+    },
+    "kicking": {
+      "fieldGoal0_19": 1,
+      "fieldGoal20_29": 2,
+      "fieldGoal30_39": 3,
+      "fieldGoal40_49": 4,
+      "fieldGoal50plus": 5,
+      "patMade": 1,
+      "patMissed": -3
+    },
+    "dst": {
+      "sack": 1,
+      "interception": 2,
+      "fumbleRecovery": 2,
+      "touchdown": 6,
+      "safety": 2,
+      "blockKick": 2,
+      "returnTouchdown": 6,
+      "extraPointReturned": 2,
+      "pointsAllowed": [
+        {
+          "max": 0,
+          "points": 10
+        },
+        {
+          "max": 6,
+          "points": 7
+        },
+        {
+          "max": 13,
+          "points": 4
+        },
+        {
+          "max": 20,
+          "points": 1
+        },
+        {
+          "max": 27,
+          "points": 0
+        },
+        {
+          "max": 34,
+          "points": -1
+        },
+        {
+          "max": null,
+          "points": -4
+        }
+      ]
+    },
+    "idp": {
+      "tackleSolo": 1,
+      "tackleAssist": 0.5,
+      "sack": 2,
+      "interception": 2,
+      "fumbleForce": 2,
+      "fumbleRecovery": 2,
+      "touchdown": 6,
+      "safety": 2,
+      "passDefended": 1,
+      "blockKick": 2,
+      "extraPointReturned": 2
+    }
+  },
+  "keepers": null,
+  "_rosterSlots": [
+    "The 12 starting slots, from the Yahoo settings page. See SCORING.md -- that file is the",
+    "source and this is the copy. `pos` lists every position that can fill the slot, so the flex",
+    "and the two IDP slots are the same shape as the rest. Fill most-constrained first: a safety",
+    "belongs in DB before it goes in the open D."
+  ],
+  "bench": 6,
+  "ir": 2,
+  "_scoring": [
+    "Yahoo scoring values, transcribed 08/20/26. SCORING.md is the readable record and the",
+    "source; this is the copy. Nothing in lib/ reads it yet -- it is here so a projection or a",
+    "value column has one place to come from rather than being retyped.",
+    "Yardage entries are {per, point, bonus:{at, points}}: 1 point per `per` yards, plus a flat",
+    "bonus once `at` yards is reached."
+  ]
 }

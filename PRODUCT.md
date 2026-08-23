@@ -54,10 +54,16 @@ knows. Its live truth comes from the league's real shared board, not from a rank
 
 ## Capabilities and Constraints
 
-- **League:** 12 teams, 20 rounds, snake draft. James's team is "Jimmy", drafting 10th.
-- **Scoring:** half-PPR (0.5 per reception), **6 points per passing touchdown** (confirmed by James 08/18/26 — it selects which of the UDK's six ranking sets we pull, and moves QBs several spots).
-- **Starting lineup:** 1 QB, 2 RB, 3 WR, 1 TE, 1 FLEX, plus DST, K, and IDP slots (LB, DE, S).
-  Remainder is bench.
+- **League:** 12 teams, 20 rounds, snake draft. James's team is "Jimmy", drafting 10th. The
+  2025 board only ever got 18 rounds filled in — a habit of the league, not a shorter draft.
+- **Scoring:** half-PPR (0.5 per reception), **6 points per passing touchdown**. Both confirmed
+  by James (08/18/26 and again 08/23/26) and they select which of the UDK's six ranking sets we
+  pull; the 6-point passing TD moves QBs several spots. Every scoring value in the league is
+  transcribed in `SCORING.md` and copied into `data/league.json`.
+- **Starting lineup (12):** 1 QB, 3 WR, 2 RB, 1 TE, 1 W/R/T flex, 1 K, 1 DEF, and **two IDP
+  slots — one open `D` and one `DB`** (confirmed 08/23/26; this file previously said three
+  slots, LB/DE/S, which was wrong). Then 6 bench and 2 IR: **20 roster spots for 20 rounds.**
+  `D` takes any defender, `DB` only a CB or S — so a safety is worth more spent on the `DB`.
 - **Keepers:** one keeper per team, costing a draft pick. *Undecided and not to be invented:
   which round the forfeited pick comes from.*
 - **Player pool:** 676 players across QB/RB/WR/TE/DST/K and IDP (LB, DE, DT, S, CB). A two-way
@@ -82,6 +88,9 @@ Real, in this repo, extracted from the 2025 workbooks:
   his own words ("***RB deadzone begin***", "23 - First K Picked (By me last year)",
   "23 - IDP!!! / LB / S FIRST").
 - `data/board.local.json` — the complete 2025 draft, 216 picks, used as a test fixture.
+- `SCORING.md` — every scoring value and roster slot, transcribed from the Yahoo settings page
+  on 08/20/26, with the source screenshots kept in `scoring/`. `data/league.json` carries the
+  machine-readable copy in `rosterSlots` and `scoring`.
 - Source workbooks: `E3 Draft 2025.xlsx`, `JPC USE - Draft 2025 - in use.xlsx`.
 
 Not on hand and not to be fabricated: this year's rankings, this year's keeper selections, the
