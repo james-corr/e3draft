@@ -156,6 +156,9 @@ let rawPlan = null;
 async function loadPlayerList() {
   try {
     allPlayers = await fetch("/api/players").then((r) => r.json());
+    // The pool lands after the first payload as often as before it, so the
+    // ordering has to be built here too rather than only in render().
+    rebuildCandidates();
   } catch (err) {
     console.error("couldn't read the player list", err);
   }
@@ -173,16 +176,50 @@ async function loadPlan() {
    holds — the server is the one that decides who a typed name resolved to. */
 let takenIds = new Set();
 
-/* The type-ahead's candidate list: pool order, with taken players marked and
-   pushed to the back so the obvious pick is never below a drafted one. */
-function pickCandidates() {
+/**
+ * Where a player goes in a list of candidates: his expected draft slot, as one
+ * overall pick number, low first.
+ *
+ * FFB ADP is stored round.pick — 1.04 is the fourth pick of round one — so it
+ * has to be flattened before it can be compared to anything. `pros_rank` is
+ * already an overall rank and covers the players FFB doesn't price at all (IDP
+ * and kickers have no ADP), which puts them below the priced players without a
+ * special case.
+ */
+function draftValue(p) {
+  const teams = state?.league?.teams?.length || 12;
+  if (typeof p.ffb_adp === "number") {
+    const round = Math.floor(p.ffb_adp);
+    const slot = Math.round((p.ffb_adp - round) * 100);
+    return (round - 1) * teams + slot;
+  }
+  return typeof p.pros_rank === "number" ? p.pros_rank : Infinity;
+}
+
+/* The type-ahead's candidate list: everyone in draft order, best first, with
+   drafted players pushed to the back — still in draft order among themselves,
+   so the block at the bottom reads the same way as the block at the top.
+
+   Sorted once per board change rather than per keystroke; 1069 players is
+   nothing to sort, but it is also nothing to sort repeatedly for no reason. */
+let candidates = [];
+
+function rebuildCandidates() {
   const open = [];
   const gone = [];
   for (const p of allPlayers) {
     p.taken = takenIds.has(p.id);
+    p.value = draftValue(p);
     (p.taken ? gone : open).push(p);
   }
-  return open.concat(gone);
+  const byValue = (a, b) => a.value - b.value || a.name.localeCompare(b.name);
+  open.sort(byValue);
+  gone.sort(byValue);
+  candidates = open.concat(gone);
+}
+
+function pickCandidates() {
+  return candidates;
 }
 
 /* ------------------------------------------------------------------ rails */
@@ -326,6 +363,10 @@ function renderCue(s) {
    what they are for. The cue strip still calls the round in play; this is the
    rest of the tape. */
 function renderNotes(s) {
+  // Same rule as the plans panel: a pick landing mid-edit must not rebuild the
+  // field and take the caret with it.
+  if (editing && el.notesList.contains(editing.host)) return;
+
   const round = s.board.onTheClock?.round ?? null;
   const notes = [...(s.notes || [])].sort((a, b) => a.round - b.round);
 
@@ -337,12 +378,56 @@ function renderNotes(s) {
       .map((n) => {
         const state = round === null ? "" : n.round < round ? "past" : n.round === round ? "now" : "ahead";
         return `<div class="rnote" data-state="${state}">
-          <span class="rnote__rd seg">R${String(n.round).padStart(2, "0")}</span>
-          <p class="rnote__text">${noteMarkup(n.text)}</p>
+          <button class="rnote__rd seg" data-edit-note-round="${n.index}"
+            title="Change which round this note is for">R${String(n.round).padStart(2, "0")}</button>
+          <button class="rnote__text" data-edit-note-text="${n.index}"
+            title="Edit this note">${noteMarkup(n.text)}</button>
         </div>`;
       })
       .join("") ||
-    `<p class="empty">No round notes yet. Write them in SETUP — they're the one thing here no rankings feed knows.</p>`;
+    `<p class="empty">No round notes yet. Add them in SETUP — they're the one thing here no rankings feed knows.</p>`;
+}
+
+/* Round notes are edited where they are read, the same way plans are. Adding
+   and deleting rows stays in SETUP: that is a between-drafts job, and a stray
+   click during one should never be able to delete a year of margin notes. */
+
+function editNoteText(host, i) {
+  const note = rawPlan?.notes?.[i];
+  if (!note) return;
+  editInPlace(host, {
+    value: note.text,
+    multiline: true,
+    onSave: (next) => {
+      const was = note.text;
+      note.text = next;
+      savePlan().catch((err) => {
+        note.text = was;
+        echo("error", `note not changed: ${err.message}`);
+      });
+    },
+  });
+}
+
+function editNoteRound(host, i) {
+  const note = rawPlan?.notes?.[i];
+  if (!note) return;
+  editInPlace(host, {
+    value: String(note.round),
+    onSave: (next) => {
+      const n = parseInt(String(next).replace(/[^\d]/g, ""), 10);
+      const rounds = state?.league?.rounds ?? 20;
+      if (!Number.isInteger(n) || n < 1 || n > rounds) {
+        return echo("miss", `a round has to be between 1 and ${rounds}`);
+      }
+      const was = note.round;
+      note.round = n;
+      savePlan().catch((err) => {
+        note.round = was;
+        echo("error", `note not moved: ${err.message}`);
+      });
+    },
+  });
 }
 
 /* ------------------------------------------------------------ on the board */
@@ -544,11 +629,18 @@ function stopEditing({ save = false } = {}) {
 }
 
 /** Swap a rendered label/name for a text field, and put it back when done. */
-function editInPlace(host, { value, combobox, onSave }) {
+function editInPlace(host, { value, combobox, multiline, onSave }) {
   stopEditing();
   const was = host;
-  const input = document.createElement("input");
-  input.type = "text";
+  // A round note is written across several lines and keeps its ***shouts***, so
+  // it gets a real textarea rather than a single-line field that would silently
+  // flatten it on the first edit.
+  const input = document.createElement(multiline ? "textarea" : "input");
+  if (multiline) {
+    input.rows = Math.min(5, Math.max(2, String(value).split("\n").length));
+  } else {
+    input.type = "text";
+  }
   input.className = `${host.className} ${host.className}--editing`;
   input.value = value;
   input.spellcheck = false;
@@ -576,6 +668,9 @@ function editInPlace(host, { value, combobox, onSave }) {
   } else {
     input.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
+        // In a note, enter is a line break — that is what the notes are made
+        // of. Cmd/Ctrl+Enter saves, and so does clicking away.
+        if (multiline && !e.metaKey && !e.ctrlKey) return;
         e.preventDefault();
         stopEditing({ save: true });
       } else if (e.key === "Escape") {
@@ -1036,6 +1131,7 @@ function render(payload) {
   // Taken is the complement of available across the whole pool, which is how
   // the server computes it — a two-way player gone at one position is gone.
   takenIds = new Set(allPlayers.filter((p) => !available.has(p.id)).map((p) => p.id));
+  rebuildCandidates();
 
   watch = new Map();
   for (const i of state.inventory) {
@@ -1120,6 +1216,12 @@ document.addEventListener("click", async (e) => {
 
   const label = e.target.closest("[data-edit-label]");
   if (label) return editPlanLabel(label, Number(label.dataset.editLabel));
+
+  const noteText = e.target.closest("[data-edit-note-text]");
+  if (noteText) return editNoteText(noteText, Number(noteText.dataset.editNoteText));
+
+  const noteRound = e.target.closest("[data-edit-note-round]");
+  if (noteRound) return editNoteRound(noteRound, Number(noteRound.dataset.editNoteRound));
 
   const open = e.target.closest("[data-focus]");
   if (open) return openFocus(open.dataset.focus, open);
@@ -1360,7 +1462,18 @@ el.entry.addEventListener("submit", async (e) => {
 attachCombobox(el.entryInput, {
   getItems: pickCandidates,
   onPick: () => el.entry.requestSubmit(),
+  onRejected: (p) => echo("miss", `${p.name} is already drafted — ${whereWentText(p)}`),
 });
+
+/* Where a drafted player went, for the line that explains why he can't be
+   picked. The stream already carries this on the inventory rows; the board is
+   the fallback for anyone James never tagged. */
+function whereWentText(p) {
+  const w = watch.get(p.id);
+  if (w?.wentAt) return `gone ${w.wentAt}${w.wentTo ? ` to ${w.wentTo}` : ""}`;
+  const on = state?.board?.picks?.find((x) => x.player?.id === p.id);
+  return on ? `gone ${on.label} to ${on.team}` : "already on the board";
+}
 
 el.entryUndo.addEventListener("click", async () => {
   try {

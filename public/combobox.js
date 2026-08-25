@@ -30,26 +30,25 @@ const MAX_ROWS = 8;
 /**
  * Rank candidates for what's been typed.
  *
- * Three bands, in order: the whole query starts a name, the query starts any
- * word in the name ("gibbs" -> Jahmyr Gibbs), then anything containing it.
- * Within a band the caller's order wins, which is ranking order, so the best
- * player always sits above the merely-similarly-spelled one.
+ * One rule: everything containing what you typed, in draft order, best first.
+ * "chase" gives Ja'Marr Chase before Chase Brown even though only Brown's name
+ * STARTS with it — where the letters happen to fall says nothing about who you
+ * meant, and the better player almost always is.
+ *
+ * The caller hands the list already sorted by draft value and with drafted
+ * players pushed to the back, so this only has to filter and preserve order.
  */
 export function rank(items, query) {
   const q = fold(query);
   if (!q) return items.slice(0, MAX_ROWS);
 
-  const starts = [];
-  const word = [];
-  const loose = [];
+  const out = [];
   for (const it of items) {
     const f = it.fold ?? (it.fold = fold(it.name));
-    if (f.startsWith(q)) starts.push(it);
-    else if (f.includes(` ${q}`)) word.push(it);
-    else if (f.includes(q)) loose.push(it);
-    if (starts.length >= MAX_ROWS) break;
+    if (f.includes(q)) out.push(it);
+    if (out.length >= MAX_ROWS) break;
   }
-  return [...starts, ...word, ...loose].slice(0, MAX_ROWS);
+  return out;
 }
 
 let uid = 0;
@@ -61,11 +60,17 @@ let uid = 0;
  * and is called per keystroke so it can follow the live board. `onPick(item)`
  * fires on click, enter, or tab. `onCommit(text)` fires when enter is pressed
  * with the list closed or empty, i.e. James typed a name the list didn't offer;
- * without it, enter falls through to the form's own submit.
+ * without it, enter falls through to the form's own submit. `onRejected(item)`
+ * fires when a drafted player is aimed at, so the caller can say why nothing
+ * happened.
+ *
+ * A player already on the board is shown — knowing he is gone is the answer to
+ * "where is he?" — but cannot be chosen. Arrow keys step over him, enter never
+ * lands on him, and clicking him does nothing.
  *
  * Returns { destroy, close } so an inline editor can tear its own field down.
  */
-export function attachCombobox(input, { getItems, onPick, onCommit } = {}) {
+export function attachCombobox(input, { getItems, onPick, onCommit, onRejected } = {}) {
   const id = `cbx-${++uid}`;
   const list = document.createElement("ul");
   list.className = "cbx";
@@ -98,7 +103,9 @@ export function attachCombobox(input, { getItems, onPick, onCommit } = {}) {
       .map((it, i) => {
         const bits = [it.pos, it.team || "—"].filter(Boolean).join(" · ");
         return `<li class="cbx__row" role="option" id="${id}-${i}"
-          aria-selected="${i === active}" data-i="${i}"${it.taken ? ' data-taken="true"' : ""}>
+          aria-selected="${i === active}" data-i="${i}"${
+            it.taken ? ' data-taken="true" aria-disabled="true"' : ""
+          }>
           <span class="cbx__name">${esc(it.name)}</span>
           <span class="cbx__meta">${esc(bits)}</span>
           ${it.taken ? `<span class="cbx__gone">GONE</span>` : ""}
@@ -131,12 +138,21 @@ export function attachCombobox(input, { getItems, onPick, onCommit } = {}) {
     paint();
   }
 
-  /* The row enter takes: whatever is highlighted, or the first one when nothing
-     is. That fallback is the whole point — typing three letters and hitting
-     enter has to land the obvious player without an arrow key. */
-  function choose(i = active >= 0 ? active : 0) {
+  /* Every row that can actually be chosen. Drafted players render but are not
+     in here, which is what makes them unselectable by every route at once. */
+  const selectable = () => shown.map((it, i) => (it.taken ? -1 : i)).filter((i) => i >= 0);
+
+  /* The row enter takes: whatever is highlighted, or the first SELECTABLE one
+     when nothing is. That fallback is the whole point — typing three letters
+     and hitting enter has to land the obvious player without an arrow key. */
+  function choose(i = active >= 0 ? active : selectable()[0]) {
     const it = shown[i];
     if (!it) return false;
+    if (it.taken) {
+      // Reached by clicking a struck-through row. Say why, change nothing.
+      onRejected?.(it);
+      return false;
+    }
     input.value = it.name;
     close();
     onPick?.(it);
@@ -149,18 +165,32 @@ export function attachCombobox(input, { getItems, onPick, onCommit } = {}) {
     if (e.key === "ArrowDown" || e.key === "ArrowUp") {
       e.preventDefault();
       if (list.hidden) return refresh();
+      const pick = selectable();
+      if (!pick.length) return;
       const step = e.key === "ArrowDown" ? 1 : -1;
-      // Wraps, and steps off the top back to "nothing highlighted" so the
-      // first-match fallback is always one keypress away.
-      active = active + step;
-      if (active >= shown.length) active = -1;
-      if (active < -1) active = shown.length - 1;
+      // Walks only the rows that can be chosen, so a run of drafted players at
+      // the bottom is scenery rather than something to arrow through. Wraps off
+      // the end to "nothing highlighted", keeping the first-match fallback one
+      // keypress away.
+      const at = pick.indexOf(active);
+      const next = at < 0 ? (step > 0 ? 0 : pick.length - 1) : at + step;
+      active = next < 0 || next >= pick.length ? -1 : pick[next];
       return paint();
     }
     if (e.key === "Enter") {
-      if (!list.hidden && choose()) {
-        e.preventDefault();
-        return;
+      if (!list.hidden) {
+        if (choose()) {
+          e.preventDefault();
+          return;
+        }
+        // The list is open and every match is already drafted. Swallow the key
+        // rather than letting it submit the raw text — that would record the
+        // duplicate this whole path exists to prevent.
+        if (!selectable().length) {
+          e.preventDefault();
+          onRejected?.(shown[0]);
+          return;
+        }
       }
       if (onCommit) {
         e.preventDefault();

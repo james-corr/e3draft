@@ -1187,6 +1187,200 @@ button {
   color: var(--caution);
 }
 
+/* --------------------------------------------------- cells you can click */
+/* Every cell is a button. The pick box fills whatever slot is next; clicking a
+   cell fills the slot you name, which is what a keeper is — a pick typed into
+   its own round before the draft reaches it — and what fixes a pick entered
+   against the wrong manager. Empty cells are targets too, so the padding moves
+   off the td and onto the button: the whole cell has to be hittable, not just
+   the words in it. */
+
+.grid td {
+  padding: 0;
+}
+
+.cellbtn {
+  display: block;
+  width: 100%;
+  min-height: 34px;
+  padding: 4px 6px;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.cellbtn:disabled {
+  cursor: default;
+}
+
+/* The affordance is a rule down the leading edge rather than a fill: the
+   column tint already means "mine" and the empty tint already means "open",
+   and a hover that repainted either would be saying something it doesn't mean. */
+.cellbtn:not(:disabled):hover {
+  box-shadow: inset 3px 0 0 var(--ink);
+}
+
+.grid td.is-mine .cellbtn:not(:disabled):hover {
+  box-shadow: inset 3px 0 0 var(--caution);
+}
+
+/* A cell holding a name the matcher couldn't place. Zebra is the blown
+   highlight and means exactly one thing in this system: something is wrong and
+   James has to look. It used to render as an empty square — a pick on the board
+   that the board didn't show. */
+.grid td.is-unmatched {
+  background: var(--alarm-field);
+  background-image: repeating-linear-gradient(
+    45deg,
+    var(--zebra-ink) 0 3px,
+    var(--zebra-gap) 3px 6px
+  );
+  background-size: 8px 100%;
+  background-repeat: no-repeat;
+}
+
+.grid td.is-unmatched .cellbtn {
+  padding-left: 14px;
+}
+
+.grid td.is-unmatched .grid__pos {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* KEEPER. Solid ink, not amber — amber is caution, and a keeper is a settled
+   fact rather than a warning. The letter carries the word beside it for
+   anything reading the page aloud, because a cell told apart by a mark alone is
+   a cell that can be misread in sun. */
+.grid__k {
+  float: right;
+  margin: 1px 0 0 4px;
+  padding: 0 4px;
+  font-family: var(--font-seg);
+  font-size: 10px;
+  line-height: 15px;
+  color: var(--scene-panel);
+  background: var(--ink);
+}
+
+.vh {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------- the cell editor */
+/* Anchored to the cell in viewport coordinates and parented to the body, the
+   same escape .cbx makes — the panel clips its overflow, and the grid is
+   rewritten wholesale on every pick that lands. Occludes with a hard border
+   rather than lifting on a shadow; this system has no shadow token. */
+
+.celled {
+  position: fixed;
+  z-index: 30;
+  width: 248px;
+  padding: 8px;
+  display: grid;
+  gap: 6px;
+  background: var(--scene-panel);
+  border: 1px solid var(--ink);
+}
+
+.celled__at {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.celled__rd {
+  color: var(--ink-dim);
+}
+
+.celled__team {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.celled__input {
+  width: 100%;
+  padding: 5px 6px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--ink);
+  background: var(--scene-sunk);
+  border: 1px solid var(--hud);
+}
+
+.celled__keep {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.celled__keep input {
+  accent-color: var(--ink);
+  margin: 0;
+}
+
+.celled__row {
+  display: flex;
+  gap: 4px;
+}
+
+.celled__btn {
+  flex: 1;
+  padding: 5px 4px;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  color: var(--ink-dim);
+  background: none;
+  border: 1px solid var(--hud);
+  cursor: pointer;
+}
+
+.celled__btn:hover:not(:disabled) {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+
+.celled__btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* SET is the primary, so it is solid ink — the same weight the SAVE in the
+   setup surface carries. Amber stays reserved for caution. */
+.celled__btn--go {
+  color: var(--scene-panel);
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+.celled__btn--go:hover:not(:disabled) {
+  color: var(--scene-panel);
+  opacity: 0.85;
+}
+
 /* ------------------------------------------------------------ TEAMS mode */
 /* Renaming, reordering and claiming a seat. A distinct mode rather than
    always-on fields: reordering re-cuts the snake, which is not a thing to do
@@ -1412,6 +1606,54 @@ button {
 
 .rnote .cue__hot {
   color: var(--ink);
+  font-weight: 700;
+}
+
+/* ------------------------------------------------- editing a note in place */
+/* Same affordance as the plans panel: a dotted rule at rest so the field is
+   discoverable without hovering, solid ink once it is live. The note text is a
+   button that becomes a textarea, because these are written across lines and a
+   single-line field would flatten them on the first edit. */
+
+.rnote__rd,
+.rnote__text {
+  text-align: left;
+  border-bottom: 1px dotted var(--hud);
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.rnote__rd {
+  align-self: start;
+}
+
+.rnote__rd:hover,
+.rnote__text:hover,
+.rnote__rd:focus-visible,
+.rnote__text:focus-visible {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+}
+
+.rnote__rd--editing,
+.rnote__text--editing {
+  width: 100%;
+  background: var(--scene);
+  border: 0;
+  border-bottom: 1px solid var(--ink);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  line-height: 1.35;
+  padding: 1px 3px;
+  outline: none;
+  resize: vertical;
+}
+
+/* The round chip keeps its segment face while it is being retyped — it is a
+   number, and the readout it replaces is one too. */
+.rnote__rd--editing {
+  font-family: var(--font-seg);
+  font-size: 11px;
   font-weight: 700;
 }
 

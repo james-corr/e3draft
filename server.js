@@ -252,7 +252,16 @@ const server = createServer(async (req, res) => {
     return sendJson(
       res,
       200,
-      pool.players.map((p) => ({ id: p.id, name: p.name, pos: p.pos, team: p.team }))
+      // ffb_adp and pros_rank ride along so the type-ahead can order candidates
+      // by draft value rather than by how the letters happened to line up.
+      pool.players.map((p) => ({
+        id: p.id,
+        name: p.name,
+        pos: p.pos,
+        team: p.team,
+        ffb_adp: p.ffb_adp ?? null,
+        pros_rank: p.pros_rank ?? null,
+      }))
     );
   }
 
