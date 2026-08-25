@@ -93,6 +93,13 @@ A mock draft is now just a draft: clear the board, run it, clear it again.
 how headless screenshots are taken — the live page never finishes loading, so capture hangs
 without it. `?view=`, `?exposure=`, `?focus=<player id>` and `?setup=1` deep-link any screen.
 
+**Always pass `--user-data-dir=<a temp dir>` when launching headless Brave, and kill it when
+you are done.** Without that flag headless attaches to James's real Brave profile and fights
+the browser he is actually using for it — new tabs stop opening and navigation dies, with no
+visible window to explain why. One orphan did exactly that for a day and a half (08/24/26).
+Check with `ps -eo pid,command | grep -i "Brave.*--headless"` before assuming the browser is
+broken.
+
 Headless Brave on macOS clamps windows to a 485px minimum, so `--window-size` cannot verify a
 narrow layout. Drive it over the DevTools protocol instead and call
 `Emulation.setDeviceMetricsOverride` — Node has a global `WebSocket`, so this needs no
