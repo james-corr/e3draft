@@ -125,6 +125,9 @@ function nextSlotLabel() {
 }
 
 let state = null;
+/* Whether this board accepts writes at all. The server refuses independently in
+   replay mode; this only keeps the UI from offering what would be refused. */
+let canEnterPicks = false;
 let activePos = "ALL";
 /* The watchlist filter. Composes with the position filter rather than replacing
    it, so "WR" + "MY GUYS" is a legal, and useful, question to ask. */
@@ -952,6 +955,13 @@ function renderGrid(s, { fromStream = false } = {}) {
 
   const byCell = new Map();
   for (const p of s.board.picks) byCell.set(`${p.round}:${p.teamIndex}`, p);
+  // An unmatched pick holds a cell on disk and is counted by the clock, but it
+  // resolves to nobody — so it used to draw as a blank square, which is the one
+  // thing this grid must never show. Zebra and the text exactly as typed, which
+  // is also what makes it clickable to correct.
+  for (const p of s.board.unmatched) {
+    byCell.set(`${p.round}:${p.teamIndex}`, { ...p, unmatched: true });
+  }
 
   let html = `<table class="grid"><thead><tr><th scope="col"></th>`;
   html += teams.map((t, i) => teamHeader(t, i, myIndex)).join("");
@@ -964,20 +974,183 @@ function renderGrid(s, { fromStream = false } = {}) {
       // preview reads a column from wherever that team currently sits.
       const from = teamsDraft ? teamsDraft.order[c] : c;
       const pick = byCell.get(`${r}:${from}`);
-      const cls = [c === myIndex ? "is-mine" : "", pick ? "" : "is-empty"].filter(Boolean).join(" ");
-      if (!pick) {
-        html += `<td class="${cls}"></td>`;
-        continue;
-      }
-      html += `<td class="${cls}">
-        <span class="grid__name">${esc(pick.player.name)}</span>
-        <span class="grid__pos">${esc(pick.player.pos)} · ${esc(pick.player.team ?? "")}</span>
-      </td>`;
+      const cls = [
+        c === myIndex ? "is-mine" : "",
+        pick ? "" : "is-empty",
+        pick?.unmatched ? "is-unmatched" : "",
+        pick?.keeper ? "is-keeper" : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
+
+      const body = !pick
+        ? ""
+        : pick.unmatched
+          ? `<span class="grid__name">${esc(pick.text)}</span>
+             <span class="grid__pos">NO MATCH</span>`
+          : `<span class="grid__name">${esc(pick.player.name)}</span>
+             <span class="grid__pos">${esc(pick.player.pos)} · ${esc(pick.player.team ?? "")}</span>`;
+
+      // The badge says KEEPER in a word as well as a letter, because a cell
+      // told apart only by a mark is a cell that can be misread in sun.
+      const k = pick?.keeper ? `<span class="grid__k">K<span class="vh"> keeper</span></span>` : "";
+
+      const who = pick ? (pick.unmatched ? `${pick.text} — no match` : pick.player.name) : "empty";
+      const label = `Round ${r}, ${teams[c]}: ${who}. Click to set.`;
+
+      // The badge is emitted BEFORE the name: floated, it then shares the first
+      // line instead of dropping to a third one and making every keeper row
+      // taller than the rows around it.
+      html += `<td class="${cls}"><button type="button" class="cellbtn"
+        data-cell="${r}:${from}" aria-label="${esc(label)}"${teamsDraft ? " disabled" : ""}>
+        ${k}${body}</button></td>`;
     }
     html += `</tr>`;
   }
   html += `</tbody></table>`;
   el.gridBody.innerHTML = html;
+
+  // The editor rides on document.body, so a re-render leaves it pointing at a
+  // cell that no longer exists. Re-anchor it to the new one.
+  placeCellEditor();
+}
+
+/* -------------------------------------------------------- the cell editor */
+/* Click any cell and set what is in it. The pick box fills whatever slot is
+   next; this fills a slot you name. That is what keepers need — Bob keeping
+   Drake Maye in round 10 is just his round-10 cell, typed before the draft
+   starts — and it is also how a typo, or a pick entered against the wrong
+   manager, gets fixed while the draft is running.
+
+   The popover lives on document.body rather than inside the cell. renderGrid
+   reassigns gridBody.innerHTML on every payload, so anything nested in the
+   table is destroyed the moment somebody else's pick lands. combobox.js
+   escapes the panels' overflow clipping the same way. */
+
+let cellEdit = null; // { round, teamIndex } while open
+let cellBox = null; // the popover element
+let cellCombo = null; // the type-ahead attached to its input
+
+function cellAt(round, teamIndex) {
+  if (!state) return null;
+  const hit = state.board.picks.find((p) => p.round === round && p.teamIndex === teamIndex);
+  if (hit) return { name: hit.player.name, keeper: Boolean(hit.keeper) };
+  const miss = state.board.unmatched.find((p) => p.round === round && p.teamIndex === teamIndex);
+  // The raw text for an unmatched cell — seeing the typo is how you fix it.
+  // The resolved name for a matched one, so saving "gibbs" back tidies it up.
+  if (miss) return { name: miss.text, keeper: Boolean(miss.keeper) };
+  return { name: "", keeper: false };
+}
+
+function placeCellEditor() {
+  if (!cellBox || !cellEdit) return;
+  const td = el.gridBody.querySelector(
+    `[data-cell="${cellEdit.round}:${cellEdit.teamIndex}"]`
+  );
+  if (!td) return closeCell();
+  const r = td.getBoundingClientRect();
+  const w = cellBox.offsetWidth || 240;
+  // Flip left or up rather than run off the edge — the last round and the last
+  // manager are both cells James will actually click.
+  const left = Math.min(r.left, window.innerWidth - w - 8);
+  const below = r.bottom + cellBox.offsetHeight + 8 < window.innerHeight;
+  cellBox.style.left = `${Math.max(8, left)}px`;
+  cellBox.style.top = below ? `${r.bottom + 2}px` : `${r.top - cellBox.offsetHeight - 2}px`;
+}
+
+function closeCell() {
+  cellCombo?.destroy();
+  cellCombo = null;
+  cellBox?.remove();
+  cellBox = null;
+  cellEdit = null;
+}
+
+function openCell(round, teamIndex) {
+  if (!canEnterPicks) return echo("error", "the board is a read-only replay in this mode");
+  // Clicking the open cell again closes it, the way a toggle should.
+  if (cellEdit && cellEdit.round === round && cellEdit.teamIndex === teamIndex) return closeCell();
+  closeCell();
+
+  const team = state?.league?.teams[teamIndex] ?? "";
+  const cur = cellAt(round, teamIndex);
+  cellEdit = { round, teamIndex };
+
+  cellBox = document.createElement("div");
+  cellBox.className = "celled";
+  cellBox.innerHTML = `
+    <div class="celled__at">
+      <span class="celled__rd seg">R${String(round).padStart(2, "0")}</span>
+      <span class="celled__team">${esc(team)}</span>
+    </div>
+    <input class="celled__input" type="text" spellcheck="false"
+      placeholder="type a player" aria-label="Player in round ${round} for ${esc(team)}" />
+    <label class="celled__keep">
+      <input type="checkbox" ${cur.keeper ? "checked" : ""} />
+      <span>KEEPER</span>
+    </label>
+    <div class="celled__row">
+      <button type="button" class="celled__btn celled__btn--go" data-act="save">SET</button>
+      <button type="button" class="celled__btn" data-act="clear"${cur.name ? "" : " disabled"}>CLEAR</button>
+      <button type="button" class="celled__btn" data-act="cancel">CANCEL</button>
+    </div>`;
+  document.body.appendChild(cellBox);
+
+  const input = cellBox.querySelector(".celled__input");
+  const keep = cellBox.querySelector(".celled__keep input");
+  input.value = cur.name;
+
+  // The same type-ahead as the pick box: same ranking, same GONE badges, and
+  // typing straight past the list is still allowed, because a name the matcher
+  // can't place has to be recordable (rule 1).
+  cellCombo = attachCombobox(input, {
+    getItems: pickCandidates,
+    onPick: (item) => {
+      input.value = item.name;
+      commitCell(input.value, keep.checked);
+    },
+    onCommit: (text) => commitCell(text, keep.checked),
+  });
+
+  cellBox.addEventListener("click", (e) => {
+    const act = e.target.closest("[data-act]")?.dataset.act;
+    if (act === "save") commitCell(input.value, keep.checked);
+    if (act === "clear") commitCell("", false);
+    if (act === "cancel") closeCell();
+  });
+
+  placeCellEditor();
+  input.focus();
+  input.select();
+}
+
+async function commitCell(name, keeper) {
+  if (!cellEdit) return;
+  const { round, teamIndex } = cellEdit;
+  closeCell();
+  try {
+    const out = await postBoard("cell", { round, teamIndex, name, keeper });
+    if (out.cleared) {
+      echo("idle", `${out.at.label} ${out.at.team} — cleared${out.before ? ` (was "${out.before}")` : ""}`);
+    } else if (out.already) {
+      // Recorded and said out loud, exactly as the pick box does. A player on
+      // the board twice leaves James believing someone is still available.
+      echo(
+        "miss",
+        `${out.at.label} — ${out.already.name} is ALREADY at ${out.already.label} by ${out.already.team}. Set anyway; clear one of them.`
+      );
+    } else if (out.matched.length) {
+      const who = out.matched.map((m) => `${m.name} · ${m.pos}${m.team ? ` · ${m.team}` : ""}`).join("  +  ");
+      echo("hit", `${out.at.label} ${out.at.team} — ${who}${out.keeper ? " · KEEPER" : ""}`);
+    } else {
+      echo(
+        "miss",
+        `${out.at.label} "${out.text}" — no match${out.suggestion ? `. did you mean ${out.suggestion}?` : ""}`
+      );
+    }
+  } catch (err) {
+    echo("error", err.message);
+  }
 }
 
 /* ------------------------------------------------------------- target view */
@@ -1116,6 +1289,7 @@ let booted = false;
 
 function render(payload) {
   renderRails(payload);
+  canEnterPicks = Boolean(payload.canEnterPicks);
   if (!payload.state) return;
   state = payload.state;
 
@@ -1313,14 +1487,30 @@ el.teamsSave.addEventListener("click", saveTeams);
 el.boardClear.addEventListener("click", async () => {
   const made = state?.board?.madePicks ?? 0;
   if (!made) return echo("idle", "the board is already empty");
-  if (!confirm(`Clear all ${made} pick${made === 1 ? "" : "s"} off the board?\n\nThere is no undo for this one.`)) {
+  // Keepers are kept, because CLEAR BOARD is how a mock draft is run and a
+  // keeper was true before the rehearsal started. Said out loud in the prompt
+  // rather than left to be discovered.
+  // Counted off the board, not off the marker list: a marker pointing at a cell
+  // that was cleared isn't a pick anybody keeps.
+  const keepers =
+    (state?.board?.picks ?? []).filter((p) => p.keeper).length +
+    (state?.board?.unmatched ?? []).filter((p) => p.keeper).length;
+  const kept = keepers
+    ? `\n\nThe ${keepers} keeper${keepers === 1 ? "" : "s"} stay${keepers === 1 ? "s" : ""} on the board.`
+    : "";
+  if (
+    !confirm(
+      `Clear ${made - keepers} pick${made - keepers === 1 ? "" : "s"} off the board?${kept}\n\nThere is no undo for this one.`
+    )
+  ) {
     return;
   }
   try {
-    await postBoard("reset");
+    closeCell();
+    const out = await postBoard("reset");
     seenPicks = new Set();
     firstPaint = true; // nothing on the fresh board should flash as "just went"
-    echo("idle", "board cleared");
+    echo("idle", out.kept ? `board cleared — ${out.kept} keeper${out.kept === 1 ? "" : "s"} kept` : "board cleared");
   } catch (err) {
     echo("error", err.message);
   }
@@ -1339,6 +1529,15 @@ el.gridBody.addEventListener("input", (e) => {
 });
 
 el.gridBody.addEventListener("click", (e) => {
+  // Cells first: the TEAMS guard below returns early, and outside TEAMS mode it
+  // is the reason the grid used to swallow every click. Cell buttons render
+  // disabled while TEAMS is open, so reordering can't fight editing.
+  const cell = e.target.closest("[data-cell]");
+  if (cell && !teamsDraft) {
+    const [round, teamIndex] = cell.dataset.cell.split(":").map(Number);
+    return openCell(round, teamIndex);
+  }
+
   if (!teamsDraft) return;
 
   const me = e.target.closest("[data-me]");
@@ -1365,6 +1564,10 @@ el.gridBody.addEventListener("click", (e) => {
 
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
+    if (cellEdit) {
+      e.preventDefault();
+      return closeCell();
+    }
     if (isSetupOpen()) {
       e.preventDefault();
       return void closeSetup();
@@ -1388,6 +1591,20 @@ document.addEventListener("keydown", (e) => {
 /* The setup overlay writes the same plan file the FIELD screen edits in place.
    Re-read on close so the two can't drift apart. */
 initSetup({ onClose: loadPlan });
+
+/* Clicking away closes the editor. Capture phase so it runs before the grid's
+   own handler, which would otherwise reopen the cell that was just clicked. */
+document.addEventListener("mousedown", (e) => {
+  if (!cellEdit) return;
+  if (cellBox?.contains(e.target)) return;
+  if (e.target.closest(".cbx")) return; // the type-ahead popover is part of it
+  if (e.target.closest("[data-cell]")) return; // let the grid handler switch cells
+  closeCell();
+});
+
+// The popover is anchored in viewport coordinates, so it has to follow.
+window.addEventListener("resize", placeCellEditor);
+document.addEventListener("scroll", placeCellEditor, true);
 
 /* Both are fetched once, not per keystroke: the pool for the type-ahead, the
    raw plan so plan targets can be edited where they are read. */

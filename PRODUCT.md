@@ -66,8 +66,10 @@ knows. Its live truth comes from the league's real shared board, not from a rank
   slots — one open `D` and one `DB`** (confirmed 08/23/26; this file previously said three
   slots, LB/DE/S, which was wrong). Then 6 bench and 2 IR: **20 roster spots for 20 rounds.**
   `D` takes any defender, `DB` only a CB or S — so a safety is worth more spent on the `DB`.
-- **Keepers:** one keeper per team, costing a draft pick. *Undecided and not to be invented:
-  which round the forfeited pick comes from.*
+- **Keepers:** one keeper per team, costing a draft pick. **Which round the forfeited pick
+  comes from needs no general rule** (settled 08/24/26): James types each keeper into that
+  manager's cell for that round, so the round cost is stated per team as a fact rather than
+  derived from a policy. Keeper cells carry a `K` on the board and survive CLEAR BOARD.
 - **Player pool:** 676 players across QB/RB/WR/TE/DST/K and IDP (LB, DE, DT, S, CB). A two-way
   player legitimately appears once per position and is one human — drafting him removes every
   one of his rows.
@@ -95,8 +97,9 @@ Real, in this repo, extracted from the 2025 workbooks:
   machine-readable copy in `rosterSlots` and `scoring`.
 - Source workbooks: `E3 Draft 2025.xlsx`, `JPC USE - Draft 2025 - in use.xlsx`.
 
-Not on hand and not to be fabricated: this year's rankings, this year's keeper selections, the
-2026 draft date, and the keeper round-cost rule.
+Not on hand and not to be fabricated: this year's rankings, this year's keeper selections, and
+the 2026 draft date. (The keeper round-cost rule was on this list until 08/24/26; it is off it
+because keepers are now entered cell by cell, so there is no rule left to fabricate.)
 
 ## Product Principles
 

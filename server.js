@@ -98,11 +98,17 @@ function reloadPool() {
  * Compared on the resolved player rather than the typed text, so "gibbs" typed
  * after "Jahmyr Gibbs" is caught. Returns null when he is still on the board.
  */
-function whoAlreadyHas(name) {
+function whoAlreadyHas(name, ignore = null) {
   const { matched } = resolvePick(pool, name);
   if (!matched.length || !current) return null;
   const norms = new Set(matched.map((m) => m.norm));
-  const had = current.board.picks.find((p) => norms.has(p.player.norm));
+  // `ignore` is the cell being rewritten. Without it, saving a cell without
+  // changing its name would report the player as a duplicate of himself.
+  const had = current.board.picks.find(
+    (p) =>
+      norms.has(p.player.norm) &&
+      !(ignore && p.round === ignore.round && p.teamIndex === ignore.teamIndex)
+  );
   return had ? { name: had.player.name, label: had.label, team: had.team } : null;
 }
 
@@ -290,15 +296,62 @@ const server = createServer(async (req, res) => {
         await tick();
         return sendJson(res, 200, { ok: true, ...out, already, next: upNext() });
       }
+      // One named cell, wherever it sits — the click-into-any-pick path. This is
+      // how keepers get onto the board: Bob keeping Drake Maye in round 10 is
+      // just Bob's round-10 cell, typed before the draft starts. It is also how
+      // a typo or a pick entered in the wrong column gets fixed mid-draft.
+      if (action === "cell") {
+        const body = await readBody(req);
+        const round = Number(body.round);
+        const teamIndex = Number(body.teamIndex);
+
+        // Validated BEFORE anything is written: this action touches two files
+        // and a request that ends in an error must not have left the first one
+        // changed. Same reasoning as /api/league below.
+        if (!Number.isInteger(round) || round < 1 || round > league.rounds) {
+          throw new Error(`round ${body.round} is outside 1-${league.rounds}`);
+        }
+        if (!Number.isInteger(teamIndex) || teamIndex < 0 || teamIndex >= league.teams.length) {
+          throw new Error(`there is no column ${body.teamIndex}`);
+        }
+
+        const already = body.name ? whoAlreadyHas(body.name, { round, teamIndex }) : null;
+        const out = picks.setCell(DATA, league, SEASON, round, teamIndex, body.name, (text) =>
+          resolvePick(pool, text)
+        );
+
+        // The marker is coordinates only; the name lives in the grid. Clearing
+        // a cell drops its marker with it — an empty cell is nobody's keeper.
+        const wanted = out.cleared ? false : Boolean(body.keeper);
+        const had = league.keepers.some((k) => k.round === round && k.teamIndex === teamIndex);
+        if (wanted !== had) {
+          store.saveKeepers(
+            wanted
+              ? [...league.keepers, { round, teamIndex }]
+              : league.keepers.filter((k) => !(k.round === round && k.teamIndex === teamIndex))
+          );
+        }
+
+        // A cleared-then-refilled cell can hash the same as before. Force it.
+        lastHash = null;
+        await tick();
+        return sendJson(res, 200, { ok: true, ...out, keeper: wanted, already, next: upNext() });
+      }
       if (action === "undo") {
         const removed = picks.undoPick(DATA, league, SEASON);
         await tick();
         return sendJson(res, 200, { ok: true, removed, next: upNext() });
       }
       if (action === "reset") {
-        picks.resetBoard(DATA, league, SEASON);
+        // Keepers survive by default — CLEAR BOARD is how a mock draft is run,
+        // and a keeper was true before the rehearsal started. `?all=1` is the
+        // deliberate wipe, keeper markers included.
+        const { all } = await readBody(req);
+        picks.resetBoard(DATA, league, SEASON, all ? [] : league.keepers);
+        if (all && league.keepers.length) store.saveKeepers([]);
+        lastHash = null;
         await tick();
-        return sendJson(res, 200, { ok: true, next: upNext() });
+        return sendJson(res, 200, { ok: true, kept: all ? 0 : league.keepers.length, next: upNext() });
       }
       return sendJson(res, 404, { error: `unknown board action "${action}"` });
     } catch (err) {

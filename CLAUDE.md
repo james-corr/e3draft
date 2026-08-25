@@ -33,8 +33,9 @@ comment or a doc that still says otherwise, it is stale; fix it.
 4. **James is not a developer.** Explain trade-offs in plain terms and give a recommendation.
 
 5. **Don't invent league facts.** Scoring, roster slots, and keeper rules came from James
-   directly and live in `PRODUCT.md`. The keeper round-cost is still undecided — leave it
-   undecided rather than guessing.
+   directly and live in `PRODUCT.md`. The keeper round-cost never needed deciding: keepers are
+   typed into the cell for the manager and round they cost, so the round is entered, not
+   inferred. Don't build a rule for it now.
 
 6. **A star and a tag are one record.** The watchlist and the "star a target" idea were the same
    thing in the old workbook and are one inventory entry here: `{ starred, tags, note }` per player.

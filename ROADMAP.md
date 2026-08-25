@@ -10,20 +10,13 @@ three needed no code — both ranking sources were already pulling half-PPR, and
 was already right (12 starters + 6 bench + 2 IR = 20, so the 240-vs-216 gap was the 2025 board
 stopping at round 18, not a defect). The IDP slots were the real bug and `MY TEAM` is fixed.
 
-1. **Keeper round cost** — the only league fact still undecided. One keeper per team, costing a
-   draft pick; which round the forfeited pick comes from has never been settled. Blocks keeper
-   pre-fill on the board tab and nothing else.
-
-Then:
-
-2. **Rewrite the 9 plans and 10 round notes** for this season. James's judgment, not a code
+1. **Rewrite the 9 plans and 10 round notes** for this season. James's judgment, not a code
    task. The 2025 plans are carried forward as the starting point; 67 of their 69 targets still
    resolve against the 2026 pool. Plan names and targets are now editable directly on the FIELD
    screen; adding and removing rows is in the setup surface.
 
 ## Next
 
-- Pre-fill keeper picks on the board tab once the round rule is settled
 - Reordering plans, and duplicating one as the starting point for another
 - Decide whether two different players sharing a name and position should be able to hold two
   rows. FantasyPros 2026 ranks two separate Isaiah Williamses at WR; the id format is
@@ -40,6 +33,23 @@ Then:
 - Ingest Fantasy Footballers podcast transcripts and query them with an LLM over transcripts + rankings (explicitly deferred; storage is kept flat and file-based so this stays possible)
 
 ## Shipped
+
+- **Any cell can be set, and keepers with it** (08/24/26): click any square on the board and
+  type who is in it — the pick box fills whatever slot is next, this fills the slot you name.
+  Ticking **KEEPER** marks the cell with a `K`; the marker is coordinates in `league.json`
+  while the name stays in the grid, so the two cannot drift, and it travels with its column
+  when the teams are reordered. Three things came with it:
+  - **The keeper round cost stopped being an open question.** It was the last undecided league
+    fact, blocking since 08/13. It never needed a rule — James enters each keeper in the round
+    it actually costs, so the round is a fact rather than a policy.
+  - **The clock scans instead of counting.** `onTheClock` was `pickAt(madePicks + 1)`, which
+    with keepers pre-filled would have announced a slot N ahead of where a typed pick actually
+    lands, N being the number of keepers. It now reads which slots are filled and agrees with
+    `nextOpen`; `myNext` and `picksAway` count only slots still empty.
+  - **Unmatched picks render.** They held a cell on disk and were counted by the clock, but the
+    grid drew them as empty squares. They now carry the zebra and the text as typed, and
+    clicking one reopens it with that text loaded to correct.
+  - CLEAR BOARD keeps keepers, because it is also how a mock draft is run.
 
 - **Published** (08/24/26): <https://github.com/james-corr/e3draft>, public. Two things were
   removed from history first, and both are worth knowing about if the repo is ever rebuilt:

@@ -125,13 +125,17 @@ through the same screens you'll use on the day, clear again.
 
 This is the part that used to take an afternoon.
 
-1. Update team names and draft order in `data/league.json`.
+1. Update team names and draft order — **TEAMS** on the BOARD screen, or `data/league.json`.
 2. Pull this year's rankings — **REFRESH FROM UDK** in **setup**, or `npm run refresh` in a
    terminal. Both do the same thing: log into thefantasyfootballers.com and rewrite
    `data/players.<year>.json`. See "Refreshing the rankings" below.
 3. Point the app at the new season: set `"season"` in `config.json`.
 4. Rewrite the plans and round notes in **setup** (the icon in the PLANS header).
-5. Clear the board tab and pre-fill any keepers.
+5. **CLEAR BOARD**, then enter this year's keepers: click the manager's cell in the round
+   their keeper costs, type the player, tick **KEEPER**, press SET. That takes them out of the
+   available pool straight away, and the pick box skips those cells when the draft reaches
+   them. Keepers survive a later CLEAR BOARD, so a mock draft resets to the real starting
+   position.
 
 No formulas to rewire, because there are no formulas.
 

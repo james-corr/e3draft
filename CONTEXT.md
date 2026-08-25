@@ -92,8 +92,9 @@ See `ROADMAP.md` for state and `PRODUCT.md` for the product record.
 - Starting lineup, confirmed 08/23/26: 1 QB, **3 WR**, 2 RB, 1 TE, 1 W/R/T flex, K, DEF, and
   **two IDP slots — one open `D` and one `DB`**, not the three (LB/DE/S) recorded here until
   now. Then 6 bench and 2 IR — 20 spots for 20 rounds. `SCORING.md` is the record.
-- One keeper per team, costing a draft pick. **Which round the forfeited pick comes from is
-  still undecided — do not invent it.**
+- One keeper per team, costing a draft pick. Which round it costs is **entered per team on the
+  board** (08/24/26) rather than set by a rule — click the manager's cell in that round and set
+  the player. No general policy was ever decided, and none is needed.
 - James is "Jimmy", drafting 10th.
 
 **Product (08/14/26):**

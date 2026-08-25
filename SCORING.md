@@ -177,6 +177,10 @@ draft history disagree.
 
 ## Still open
 
-**Keeper round cost.** One keeper per team, costing a draft pick; which round the forfeited
-pick comes from has never been settled. Unchanged, and still not to be invented. It blocks
-pre-filling keeper picks on the board tab and nothing else.
+Nothing.
+
+**Keeper round cost** was the last item here. One keeper per team costing a draft pick, with
+the forfeited round never settled — it blocked pre-filling keepers and nothing else. Closed
+08/24/26 without a rule being decided: keepers are typed into the cell for the manager and the
+round they actually cost, so the round is a fact James enters rather than a policy the app has
+to hold. See `PRODUCT.md`.

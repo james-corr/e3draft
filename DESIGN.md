@@ -336,6 +336,13 @@ The one error surface. A 46px 45° zebra stripe flush against a body on alarm fi
 ### Board Grid
 A collapsed-border table with sticky column headers and a sticky segmented row-number column, both on panel face. Cells are 1px HUD, min 108px, name over a dim position line. James's column takes the alarm field plus a 2px inset amber left edge; empty cells take the sunk tone.
 
+Every cell is a full-bleed button — the padding lives on the button, not the `td`, so an empty square is as hittable as a full one. The hover affordance is a 3px inset rule down the leading edge, ink normally and amber in James's own column: a hover that repainted the cell would be overwriting what the column tint and the empty tint already say. Cell buttons render disabled in TEAMS mode, where the columns are a reorder preview rather than the board.
+
+Three cell states beyond filled and empty. A **keeper** carries a `K` chip — solid ink on panel face, segmented type, floated onto the name's own line so a keeper row is never taller than the rows around it — with the word "keeper" alongside it for anything reading the page aloud. An **unmatched** cell takes the alarm field plus an 8px zebra stripe down its leading edge and reads `NO MATCH` in full-weight ink under the text exactly as typed; it is the same warning the CHECK SHEET banner carries, in the place the mistake actually is. Amber appears in neither: a keeper is a settled fact and an unmatched name is a blown highlight, and caution amber means neither of those.
+
+### Cell Editor
+A 248px popover parented to `document.body` and anchored to the clicked cell in viewport coordinates, flipping left or up at the frame edge. Body-parented for the same reason `.cbx` is: the panels clip their overflow, and the grid is rewritten wholesale on every pick that lands. Panel face inside a 1px ink border — it occludes rather than lifts, because the system has no shadow token. Holds a segmented round label and the manager's name, the shared type-ahead field on sunk face, a KEEPER checkbox, and SET / CLEAR / CANCEL. SET is the primary and takes solid ink, the same weight the setup surface gives SAVE.
+
 ### Zoom Bar (signature)
 The framing control, and the primary action surface. A 280–400px bordered track carrying a tick array drawn as two repeating gradients riding the top and bottom edges, leaving a clear channel through the middle for the stop labels. The amber portion shows how far the framing is pushed toward tight, animated by `clip-path` rather than width so tick spacing stays constant; the position marker is a 2px amber bar on a full-width element moved with `transform: translateX()`. `W` and `T` end caps sit outside the track. The stops ride the scale itself rather than sitting in a separate tab strip.
 
