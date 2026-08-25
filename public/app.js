@@ -1493,30 +1493,19 @@ el.teamsSave.addEventListener("click", saveTeams);
 el.boardClear.addEventListener("click", async () => {
   const made = state?.board?.madePicks ?? 0;
   if (!made) return echo("idle", "the board is already empty");
-  // Keepers are kept, because CLEAR BOARD is how a mock draft is run and a
-  // keeper was true before the rehearsal started. Said out loud in the prompt
-  // rather than left to be discovered.
-  // Counted off the board, not off the marker list: a marker pointing at a cell
-  // that was cleared isn't a pick anybody keeps.
-  const keepers =
-    (state?.board?.picks ?? []).filter((p) => p.keeper).length +
-    (state?.board?.unmatched ?? []).filter((p) => p.keeper).length;
-  const kept = keepers
-    ? `\n\nThe ${keepers} keeper${keepers === 1 ? "" : "s"} stay${keepers === 1 ? "s" : ""} on the board.`
-    : "";
+  // Keepers go too now — LOAD KEEPERS is the only way back onto the board, so
+  // there's nothing left for a clear to preserve.
   if (
-    !confirm(
-      `Clear ${made - keepers} pick${made - keepers === 1 ? "" : "s"} off the board?${kept}\n\nThere is no undo for this one.`
-    )
+    !confirm(`Clear all ${made} pick${made === 1 ? "" : "s"} off the board?\n\nThere is no undo for this one.`)
   ) {
     return;
   }
   try {
     closeCell();
-    const out = await postBoard("reset");
+    await postBoard("reset");
     seenPicks = new Set();
     firstPaint = true; // nothing on the fresh board should flash as "just went"
-    echo("idle", out.kept ? `board cleared — ${out.kept} keeper${out.kept === 1 ? "" : "s"} kept` : "board cleared");
+    echo("idle", "board cleared");
   } catch (err) {
     echo("error", err.message);
   }

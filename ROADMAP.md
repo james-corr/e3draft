@@ -34,6 +34,14 @@ stopping at round 18, not a defect). The IDP slots were the real bug and `MY TEA
 
 ## Shipped
 
+- **LOAD KEEPERS, and CLEAR BOARD stops sparing them** (08/25/26): `KEEPERS26.md` is a
+  hand-editable Manager/Player/Round table at the repo root; the new **LOAD KEEPERS** button on
+  the BOARD screen writes each row onto its manager's cell the same way a typed-in keeper does.
+  Now that reloading them is one click, CLEAR BOARD wipes keepers along with everything else
+  instead of special-casing them — superseding the last bullet below. A manager name in the
+  file that doesn't match a team in `league.json` is skipped and reported, never guessed.
+  `lib/keepers.js`.
+
 - **Any cell can be set, and keepers with it** (08/24/26): click any square on the board and
   type who is in it — the pick box fills whatever slot is next, this fills the slot you name.
   Ticking **KEEPER** marks the cell with a `K`; the marker is coordinates in `league.json`
@@ -49,7 +57,8 @@ stopping at round 18, not a defect). The IDP slots were the real bug and `MY TEA
   - **Unmatched picks render.** They held a cell on disk and were counted by the clock, but the
     grid drew them as empty squares. They now carry the zebra and the text as typed, and
     clicking one reopens it with that text loaded to correct.
-  - CLEAR BOARD keeps keepers, because it is also how a mock draft is run.
+  - CLEAR BOARD kept keepers, because it was also how a mock draft was run. Superseded
+    08/25/26 by LOAD KEEPERS, above — see the bullet at the top of this section.
 
 - **Published** (08/24/26): <https://github.com/james-corr/e3draft>, public. Two things were
   removed from history first, and both are worth knowing about if the repo is ever rebuilt:

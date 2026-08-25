@@ -118,8 +118,9 @@ Reordering moves each team's picks with them — a manager keeps everyone they'v
 and only their place in the snake changes. If there are picks on the board it asks first,
 because that re-cuts the whole snake from that point on.
 
-**CLEAR BOARD** wipes every pick. That is also how you rehearse: clear, run a mock draft
-through the same screens you'll use on the day, clear again.
+**CLEAR BOARD** wipes every pick, keepers included. That is also how you rehearse: clear, run a
+mock draft through the same screens you'll use on the day, clear again — **LOAD KEEPERS** puts
+the keepers back on before you do.
 
 ## The yearly refresh
 
@@ -134,8 +135,8 @@ This is the part that used to take an afternoon.
 5. **CLEAR BOARD**, then enter this year's keepers: click the manager's cell in the round
    their keeper costs, type the player, tick **KEEPER**, press SET. That takes them out of the
    available pool straight away, and the pick box skips those cells when the draft reaches
-   them. Keepers survive a later CLEAR BOARD, so a mock draft resets to the real starting
-   position.
+   them. CLEAR BOARD wipes keepers along with everything else now, so a mock draft's later
+   **LOAD KEEPERS** click (BOARD screen) is what resets to the real starting position.
 
 No formulas to rewire, because there are no formulas.
 

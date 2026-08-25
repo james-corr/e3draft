@@ -374,15 +374,15 @@ const server = createServer(async (req, res) => {
         return sendJson(res, 200, { ok: true, removed, next: upNext() });
       }
       if (action === "reset") {
-        // Keepers survive by default — CLEAR BOARD is how a mock draft is run,
-        // and a keeper was true before the rehearsal started. `?all=1` is the
-        // deliberate wipe, keeper markers included.
-        const { all } = await readBody(req);
-        picks.resetBoard(DATA, league, SEASON, all ? [] : league.keepers);
-        if (all && league.keepers.length) store.saveKeepers([]);
+        // CLEAR BOARD wipes keepers too — LOAD KEEPERS (from KEEPERS26.md) is
+        // the only path back onto the board now, so there's nothing left for a
+        // clear to preserve.
+        const hadKeepers = league.keepers.length > 0;
+        picks.resetBoard(DATA, league, SEASON);
+        if (hadKeepers) store.saveKeepers([]);
         lastHash = null;
         await tick();
-        return sendJson(res, 200, { ok: true, kept: all ? 0 : league.keepers.length, next: upNext() });
+        return sendJson(res, 200, { ok: true, next: upNext() });
       }
       return sendJson(res, 404, { error: `unknown board action "${action}"` });
     } catch (err) {
