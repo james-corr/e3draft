@@ -26,3 +26,8 @@ data/*.json.bak
 
 # Raw source pulls kept for diffing; regenerate with npm run refresh
 data/raw/
+
+# The 2025 source workbooks. Migration is done (tools/extract_from_xlsx.py
+# pulled everything into data/), and one of them has live Google Sheets URLs
+# inside it. They stay on disk, out of the repo.
+*.xlsx
