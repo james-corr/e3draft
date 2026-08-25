@@ -68,9 +68,20 @@ let uid = 0;
  * "where is he?" — but cannot be chosen. Arrow keys step over him, enter never
  * lands on him, and clicking him does nothing.
  *
+ * `openOnFocus` (default true) governs whether the list appears the moment the
+ * input gains focus. The BOARD cell editor turns this off and focuses its
+ * input programmatically when it opens, so the list — anchored below the
+ * input — doesn't unfold over the KEEPER/SET/CLEAR/CANCEL row underneath it
+ * before James has touched anything. A real click on the input always opens
+ * it regardless, and typing always does too, since `onInput` refreshes
+ * unconditionally.
+ *
  * Returns { destroy, close } so an inline editor can tear its own field down.
  */
-export function attachCombobox(input, { getItems, onPick, onCommit, onRejected } = {}) {
+export function attachCombobox(
+  input,
+  { getItems, onPick, onCommit, onRejected, openOnFocus = true } = {}
+) {
   const id = `cbx-${++uid}`;
   const list = document.createElement("ul");
   list.className = "cbx";
@@ -213,7 +224,12 @@ export function attachCombobox(input, { getItems, onPick, onCommit, onRejected }
     }
   };
 
-  const onFocus = () => refresh();
+  const onFocus = () => {
+    if (openOnFocus) refresh();
+  };
+  // Covers the case openOnFocus is off: a click is what's supposed to open it,
+  // and a click on an input that already had focus never fires "focus" again.
+  const onClick = () => refresh();
   const onBlur = () => setTimeout(close, 120); // let a click on a row land first
   const onListDown = (e) => {
     const row = e.target.closest("[data-i]");
@@ -229,6 +245,7 @@ export function attachCombobox(input, { getItems, onPick, onCommit, onRejected }
   input.addEventListener("input", onInput);
   input.addEventListener("keydown", onKeyDown);
   input.addEventListener("focus", onFocus);
+  input.addEventListener("click", onClick);
   input.addEventListener("blur", onBlur);
   list.addEventListener("mousedown", onListDown);
   window.addEventListener("resize", reposition);
@@ -241,6 +258,7 @@ export function attachCombobox(input, { getItems, onPick, onCommit, onRejected }
       input.removeEventListener("input", onInput);
       input.removeEventListener("keydown", onKeyDown);
       input.removeEventListener("focus", onFocus);
+      input.removeEventListener("click", onClick);
       input.removeEventListener("blur", onBlur);
       window.removeEventListener("resize", reposition);
       window.removeEventListener("scroll", reposition, true);
