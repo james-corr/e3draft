@@ -40,6 +40,7 @@ const el = {
   teamsSave: $("teamsSave"),
   teamsCancel: $("teamsCancel"),
   boardClear: $("boardClear"),
+  loadKeepers: $("loadKeepers"),
   playerBody: $("playerBody"),
   zoomTrack: $("zoomTrack"),
   zoomFill: $("zoomFill"),
@@ -886,6 +887,7 @@ function paintTeamsMode() {
   const on = Boolean(teamsDraft);
   el.teamsEdit.hidden = on;
   el.boardClear.hidden = on;
+  el.loadKeepers.hidden = on;
   el.teamsSave.hidden = !on;
   el.teamsCancel.hidden = !on;
   el.gridMeta.textContent = on
@@ -1511,6 +1513,23 @@ el.boardClear.addEventListener("click", async () => {
     seenPicks = new Set();
     firstPaint = true; // nothing on the fresh board should flash as "just went"
     echo("idle", out.kept ? `board cleared — ${out.kept} keeper${out.kept === 1 ? "" : "s"} kept` : "board cleared");
+  } catch (err) {
+    echo("error", err.message);
+  }
+});
+
+el.loadKeepers.addEventListener("click", async () => {
+  if (!confirm("Load KEEPERS26.md onto the board? This overwrites those cells.")) return;
+  try {
+    const out = await postBoard("load-keepers");
+    const n = out.loaded.length;
+    const base = n ? `${n} keeper${n === 1 ? "" : "s"} loaded` : "no keepers loaded";
+    // Reported, not swallowed — a manager name that doesn't match a team is
+    // exactly the kind of mismatch rule 1 says must show up on screen.
+    const miss = out.unmatched.length
+      ? ` — ${out.unmatched.length} skipped, no team matches: ${out.unmatched.join(", ")}`
+      : "";
+    echo(out.unmatched.length ? "miss" : "hit", `${base}${miss}`);
   } catch (err) {
     echo("error", err.message);
   }

@@ -44,89 +44,21 @@
   "branches": [
     {
       "id": "branch-1",
-      "label": "AMON > RB > RB",
-      "named": true,
+      "label": "Plan 1",
+      "named": false,
       "picks": [
-        {
-          "round": 1,
-          "player": "Amon-Ra St. Brown",
-          "wentAt2025": 1.09
-        },
-        {
-          "round": 2,
-          "player": "Josh Jacobs",
-          "wentAt2025": 2.08
-        },
-        {
-          "round": 3,
-          "player": "James Cook",
-          "wentAt2025": 3.11
-        },
-        {
-          "round": 4,
-          "player": "Jameson Williams",
-          "wentAt2025": 5.1
-        },
-        {
-          "round": 5,
-          "player": "Jameson Williams",
-          "wentAt2025": 5.1
-        },
-        {
-          "round": 6,
-          "player": "Tetairoa McMillan",
-          "wentAt2025": 6.01
-        },
-        {
-          "round": 7,
-          "player": "Josh Allen",
-          "wentAt2025": 9.02
-        },
-        {
-          "round": 8,
-          "player": "Jayden Reed",
-          "wentAt2025": 8.12
-        },
-        {
-          "round": 9,
-          "player": "Jauan Jennings",
-          "wentAt2025": 9.07
-        },
-        {
-          "round": 10,
-          "player": "Keon Coleman",
-          "wentAt2025": 10.1
-        },
-        {
-          "round": 11,
-          "player": "Keon Coleman",
-          "wentAt2025": 10.1
-        },
-        {
-          "round": 12,
-          "player": "Los Angeles Chargers",
-          "wentAt2025": null
-        },
-        {
-          "round": 13,
-          "player": "Brandon Aubrey",
-          "wentAt2025": null
-        },
-        {
-          "round": 14,
-          "player": "Will Shipley",
-          "wentAt2025": 18.08
-        },
-        {
-          "round": 15,
-          "player": "Sean Tucker",
-          "wentAt2025": 26.12
-        },
-        {
-          "round": 16,
-          "player": "DJ Giddens",
-          "wentAt2025": null
-        }
+        { "round": 1, "player": "" },
+        { "round": 2, "player": "" },
+        { "round": 3, "player": "" },
+        { "round": 4, "player": "" },
+        { "round": 5, "player": "" },
+        { "round": 6, "player": "" },
+        { "round": 7, "player": "" },
+        { "round": 8, "player": "" },
+        { "round": 9, "player": "" },
+        { "round": 10, "player": "" },
+        { "round": 11, "player": "" },
+        { "round": 12, "player": "" }
       ]
     },
     {
@@ -134,66 +66,18 @@
       "label": "Plan 2",
       "named": false,
       "picks": [
-        {
-          "round": 1,
-          "player": "Derrick Henry",
-          "wentAt2025": 1.1
-        },
-        {
-          "round": 2,
-          "player": "Christian McCaffrey",
-          "wentAt2025": 2.02
-        },
-        {
-          "round": 3,
-          "player": "Marvin Harrison Jr.",
-          "wentAt2025": 3.12
-        },
-        {
-          "round": 4,
-          "player": "DK Metcalf",
-          "wentAt2025": 5.02
-        },
-        {
-          "round": 5,
-          "player": "Tetairoa McMillan",
-          "wentAt2025": 6.01
-        },
-        {
-          "round": 6,
-          "player": "George Pickens",
-          "wentAt2025": 6.02
-        },
-        {
-          "round": 7,
-          "player": "Calvin Ridley",
-          "wentAt2025": 7.05
-        },
-        {
-          "round": 8,
-          "player": "Tyler Warren",
-          "wentAt2025": 9.06
-        },
-        {
-          "round": 9,
-          "player": "Tucker Kraft",
-          "wentAt2025": 10.06
-        },
-        {
-          "round": 10,
-          "player": "Tucker Kraft",
-          "wentAt2025": 10.06
-        },
-        {
-          "round": 11,
-          "player": "Austin Ekeler",
-          "wentAt2025": 12.1
-        },
-        {
-          "round": 12,
-          "player": "Will Shipley",
-          "wentAt2025": 18.08
-        }
+        { "round": 1, "player": "" },
+        { "round": 2, "player": "" },
+        { "round": 3, "player": "" },
+        { "round": 4, "player": "" },
+        { "round": 5, "player": "" },
+        { "round": 6, "player": "" },
+        { "round": 7, "player": "" },
+        { "round": 8, "player": "" },
+        { "round": 9, "player": "" },
+        { "round": 10, "player": "" },
+        { "round": 11, "player": "" },
+        { "round": 12, "player": "" }
       ]
     },
     {
@@ -201,56 +85,18 @@
       "label": "Plan 3",
       "named": false,
       "picks": [
-        {
-          "round": 1,
-          "player": "Nico Collins",
-          "wentAt2025": 2.01
-        },
-        {
-          "round": 2,
-          "player": "Jonathan Taylor",
-          "wentAt2025": 2.12
-        },
-        {
-          "round": 3,
-          "player": "Tee Higgins",
-          "wentAt2025": 3.08
-        },
-        {
-          "round": 4,
-          "player": "George Kittle",
-          "wentAt2025": 4.02
-        },
-        {
-          "round": 5,
-          "player": "RJ Harvey",
-          "wentAt2025": 5.11
-        },
-        {
-          "round": 6,
-          "player": "TreVeyon Henderson",
-          "wentAt2025": 6.03
-        },
-        {
-          "round": 7,
-          "player": "Isiah Pacheco",
-          "wentAt2025": 6.02
-        },
-        {
-          "round": 8,
-          "player": "Tucker Kraft",
-          "wentAt2025": 10.06
-        },
-        {
-          "round": 9,
-          "player": "Tyler Warren",
-          "wentAt2025": 9.06
-        },
-        {
-          "round": 10,
-          "player": "Tyler Warren",
-          "wentAt2025": 9.06
-        }
+        { "round": 1, "player": "" },
+        { "round": 2, "player": "" },
+        { "round": 3, "player": "" },
+        { "round": 4, "player": "" },
+        { "round": 5, "player": "" },
+        { "round": 6, "player": "" },
+        { "round": 7, "player": "" },
+        { "round": 8, "player": "" },
+        { "round": 9, "player": "" },
+        { "round": 10, "player": "" },
+        { "round": 11, "player": "" },
+        { "round": 12, "player": "" }
       ]
     },
     {
@@ -258,196 +104,18 @@
       "label": "Plan 4",
       "named": false,
       "picks": [
-        {
-          "round": 2,
-          "player": "De'Von Achane",
-          "wentAt2025": 2.04
-        },
-        {
-          "round": 3,
-          "player": "Terry McLaurin",
-          "wentAt2025": 3.11
-        },
-        {
-          "round": 4,
-          "player": "Omarion Hampton",
-          "wentAt2025": 4.03
-        },
-        {
-          "round": 5,
-          "player": "TreVeyon Henderson",
-          "wentAt2025": 6.03
-        },
-        {
-          "round": 6,
-          "player": "Jaylen Waddle",
-          "wentAt2025": 6.09
-        },
-        {
-          "round": 9,
-          "player": "Zach Charbonnet",
-          "wentAt2025": 9.12
-        },
-        {
-          "round": 10,
-          "player": "Will Shipley",
-          "wentAt2025": 18.08
-        }
-      ]
-    },
-    {
-      "id": "branch-5",
-      "label": "Plan 5",
-      "named": false,
-      "picks": [
-        {
-          "round": 5,
-          "player": "Jaylen Waddle",
-          "wentAt2025": 6.09
-        },
-        {
-          "round": 6,
-          "player": "Isiah Pacheco",
-          "wentAt2025": 6.02
-        },
-        {
-          "round": 9,
-          "player": "David Njoku",
-          "wentAt2025": 9.03
-        }
-      ]
-    },
-    {
-      "id": "branch-6",
-      "label": "RB RB > WR WR WR",
-      "named": true,
-      "picks": [
-        {
-          "round": 1,
-          "player": "Derrick Henry",
-          "wentAt2025": 1.1
-        },
-        {
-          "round": 2,
-          "player": "Josh Jacobs",
-          "wentAt2025": 2.08
-        },
-        {
-          "round": 3,
-          "player": "Marvin Harrison Jr.",
-          "wentAt2025": 3.12
-        },
-        {
-          "round": 4,
-          "player": "DK Metcalf",
-          "wentAt2025": 5.02
-        },
-        {
-          "round": 5,
-          "player": "Tetairoa McMillan",
-          "wentAt2025": 6.01
-        },
-        {
-          "round": 6,
-          "player": "Jameson Williams",
-          "wentAt2025": 5.1
-        }
-      ]
-    },
-    {
-      "id": "branch-7",
-      "label": "WR > RB",
-      "named": true,
-      "picks": [
-        {
-          "round": 1,
-          "player": "Nico Collins",
-          "wentAt2025": 2.01
-        },
-        {
-          "round": 2,
-          "player": "Josh Jacobs",
-          "wentAt2025": 2.08
-        },
-        {
-          "round": 3,
-          "player": "James Cook",
-          "wentAt2025": 3.11
-        },
-        {
-          "round": 4,
-          "player": "DK Metcalf",
-          "wentAt2025": 5.02
-        },
-        {
-          "round": 5,
-          "player": "Tetairoa McMillan",
-          "wentAt2025": 6.01
-        }
-      ]
-    },
-    {
-      "id": "branch-8",
-      "label": "RB > WR",
-      "named": true,
-      "picks": [
-        {
-          "round": 1,
-          "player": "Derrick Henry",
-          "wentAt2025": 1.1
-        },
-        {
-          "round": 2,
-          "player": "Drake London",
-          "wentAt2025": 2.06
-        },
-        {
-          "round": 3,
-          "player": "James Cook",
-          "wentAt2025": 3.11
-        },
-        {
-          "round": 4,
-          "player": "Tetairoa McMillan",
-          "wentAt2025": 6.01
-        },
-        {
-          "round": 5,
-          "player": "George Pickens",
-          "wentAt2025": 6.02
-        }
-      ]
-    },
-    {
-      "id": "branch-9",
-      "label": "RB > WR > TE",
-      "named": true,
-      "picks": [
-        {
-          "round": 1,
-          "player": "Derrick Henry",
-          "wentAt2025": 1.1
-        },
-        {
-          "round": 2,
-          "player": "Drake London",
-          "wentAt2025": 2.06
-        },
-        {
-          "round": 3,
-          "player": "James Cook",
-          "wentAt2025": 3.11
-        },
-        {
-          "round": 4,
-          "player": "George Kittle",
-          "wentAt2025": 4.02
-        },
-        {
-          "round": 5,
-          "player": "Jameson Williams",
-          "wentAt2025": 5.1
-        }
+        { "round": 1, "player": "" },
+        { "round": 2, "player": "" },
+        { "round": 3, "player": "" },
+        { "round": 4, "player": "" },
+        { "round": 5, "player": "" },
+        { "round": 6, "player": "" },
+        { "round": 7, "player": "" },
+        { "round": 8, "player": "" },
+        { "round": 9, "player": "" },
+        { "round": 10, "player": "" },
+        { "round": 11, "player": "" },
+        { "round": 12, "player": "" }
       ]
     }
   ]

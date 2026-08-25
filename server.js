@@ -9,11 +9,13 @@ import { readBoard } from "./lib/board.js";
 import { computeState } from "./lib/state.js";
 import { createStore } from "./lib/store.js";
 import * as picks from "./lib/picks.js";
+import { parseKeepersFile, matchKeeperTeams } from "./lib/keepers.js";
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
 const DATA = join(ROOT, "data");
 const PUBLIC = join(ROOT, "public");
 const PORT = Number(process.env.PORT) || 4173;
+const KEEPERS_FILE = join(ROOT, "KEEPERS26.md");
 
 // ---------------------------------------------------------------------------
 // Config
@@ -336,6 +338,35 @@ const server = createServer(async (req, res) => {
         lastHash = null;
         await tick();
         return sendJson(res, 200, { ok: true, ...out, keeper: wanted, already, next: upNext() });
+      }
+      // Bulk keeper entry from KEEPERS26.md, for after a mock-draft CLEAR BOARD.
+      // Only writes the cells the file names — a keeper set some other way and
+      // not in the file is left exactly as it is, never dropped.
+      if (action === "load-keepers") {
+        const rows = matchKeeperTeams(parseKeepersFile(KEEPERS_FILE), league.teams);
+        const matched = rows.filter((r) => r.teamIndex >= 0);
+        const unmatched = rows.filter((r) => r.teamIndex < 0);
+
+        const loaded = matched.map((r) => ({
+          ...r,
+          ...picks.setCell(DATA, league, SEASON, r.round, r.teamIndex, r.player, (text) =>
+            resolvePick(pool, text)
+          ),
+        }));
+
+        const additions = matched
+          .filter((r) => !league.keepers.some((k) => k.round === r.round && k.teamIndex === r.teamIndex))
+          .map((r) => ({ round: r.round, teamIndex: r.teamIndex }));
+        if (additions.length) store.saveKeepers([...league.keepers, ...additions]);
+
+        lastHash = null;
+        await tick();
+        return sendJson(res, 200, {
+          ok: true,
+          loaded: loaded.map((r) => ({ manager: r.manager, player: r.player, round: r.round, team: r.at.team })),
+          unmatched: unmatched.map((r) => r.manager),
+          next: upNext(),
+        });
       }
       if (action === "undo") {
         const removed = picks.undoPick(DATA, league, SEASON);
