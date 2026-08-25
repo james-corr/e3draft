@@ -1,18 +1,18 @@
 {
   "season": 2025,
   "teams": [
+    "krame",
+    "Bobby",
+    "GREG",
+    "MO",
     "Marconi",
-    "Krame",
-    "Brett",
-    "Beans",
-    "Mike",
-    "Greg",
-    "Bob",
-    "O'Malley",
-    "Bowe",
+    "BOWE",
+    "BEANS",
     "Jimmy",
+    "STEVEN",
+    "Brett",
     "Phils",
-    "Mo"
+    "o'Malley"
   ],
   "myTeam": "Jimmy",
   "rounds": 20,
@@ -209,7 +209,12 @@
       "extraPointReturned": 2
     }
   },
-  "keepers": null,
+  "keepers": [
+    {
+      "round": 10,
+      "teamIndex": 1
+    }
+  ],
   "_rosterSlots": [
     "The 12 starting slots, from the Yahoo settings page. See SCORING.md -- that file is the",
     "source and this is the copy. `pos` lists every position that can fill the slot, so the flex",
