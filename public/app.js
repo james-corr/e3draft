@@ -1105,12 +1105,16 @@ function openCell(round, teamIndex) {
   // The same type-ahead as the pick box: same ranking, same GONE badges, and
   // typing straight past the list is still allowed, because a name the matcher
   // can't place has to be recordable (rule 1).
+  //
+  // openOnFocus is off: this input is focused programmatically the moment the
+  // modal opens, and the list is anchored right under it — left on, it would
+  // unfold over KEEPER/SET/CLEAR/CANCEL before James has touched anything.
+  // Picking a name (click or enter) only fills the field and closes the list;
+  // it does not commit. Committing is SET, CLEAR, or a second enter once the
+  // list is already closed, same as onCommit below.
   cellCombo = attachCombobox(input, {
     getItems: pickCandidates,
-    onPick: (item) => {
-      input.value = item.name;
-      commitCell(input.value, keep.checked);
-    },
+    openOnFocus: false,
     onCommit: (text) => commitCell(text, keep.checked),
   });
 
