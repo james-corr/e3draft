@@ -44,8 +44,8 @@
   "branches": [
     {
       "id": "branch-1",
-      "label": "Plan 1",
-      "named": false,
+      "label": "AMON > RB > RB",
+      "named": true,
       "picks": [
         {
           "round": 1,
@@ -79,7 +79,7 @@
         },
         {
           "round": 7,
-          "player": "Ricky Pearsall",
+          "player": "Josh Allen",
           "wentAt2025": 9.02
         },
         {
@@ -104,7 +104,7 @@
         },
         {
           "round": 12,
-          "player": "CHECK LATE ROUNDERS",
+          "player": "Los Angeles Chargers",
           "wentAt2025": null
         },
         {
