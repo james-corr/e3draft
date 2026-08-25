@@ -20,13 +20,6 @@ Then:
    task. The 2025 plans are carried forward as the starting point; 67 of their 69 targets still
    resolve against the 2026 pool. Plan names and targets are now editable directly on the FIELD
    screen; adding and removing rows is in the setup surface.
-3. **Publish to GitHub** — last, on purpose. Public repo, `.xlsx` stripped from history (one
-   workbook has a live Sheets URL inside it). Commands in
-   `plans/archive/08_18_26_setup-editor-and-github_handoff.md`. Run `ListAgents` first.
-   `scoring/` is **cleared to publish** — James, 08/23/26. The four screenshots stay in the
-   repo as the provenance for every number in `SCORING.md`; they are his own league settings
-   page and carry no credentials. Nothing to strip and no history rewrite. The `.xlsx` removal
-   is still required and is unrelated: that one has a live Sheets URL inside it.
 
 ## Next
 
@@ -47,6 +40,18 @@ Then:
 - Ingest Fantasy Footballers podcast transcripts and query them with an LLM over transcripts + rankings (explicitly deferred; storage is kept flat and file-based so this stays possible)
 
 ## Shipped
+
+- **Published** (08/24/26): <https://github.com/james-corr/e3draft>, public. Two things were
+  removed from history first, and both are worth knowing about if the repo is ever rebuilt:
+  - Both 2025 `.xlsx` workbooks. `JPC USE - Draft 2025 - in use.xlsx` has two live Google
+    Sheets URLs embedded in its sheets. They stay on disk and are now gitignored — the
+    migration off them (`tools/extract_from_xlsx.py`) was finished long ago.
+  - The publish handoff itself. `plans/archive/08_18_26_setup-editor-and-github_handoff.md`
+    quoted one of those URLs in full while explaining why the workbooks had to go, and carried
+    the grep to prove it was gone. Redacted across every revision.
+
+  `config.json` (the Fantasy Footballers login) has never been committed. `scoring/` went
+  public as cleared on 08/23/26. History was rewritten, so pre-08/24/26 commit hashes changed.
 
 - **The app is the board** (08/24/26): the shared Google Sheet is gone — no co-edited board this
   season, no Sheets API, no API key. James types every pick in. Everything that followed from
