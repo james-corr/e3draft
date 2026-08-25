@@ -1,14 +1,16 @@
 {
-  "_comment": "Copy this to config.json and fill in. config.json is gitignored — the API key never gets committed.",
+  "_comment": "Copy this to config.json and fill in. config.json is gitignored — the login never gets committed.",
 
-  "sheetId": "PASTE_THE_LONG_ID_FROM_THE_SHEET_URL_HERE",
-  "apiKey": "PASTE_YOUR_GOOGLE_CLOUD_API_KEY_HERE",
-  "tabName": "DRAFT BOARD",
+  "_source": "'live' is the real thing: data/board.<season>.json, written by the pick box in the app. That is the board — there is no shared sheet and nothing to connect to. 'local' instead replays data/board.local.json, the complete 2025 draft kept as a test fixture; the board is read-only in that mode and the server refuses to write picks.",
+  "source": "live",
 
-  "_pollMs": "How often to ask Google for new picks. 1500ms keeps us inside the 1-3 second target with room to spare.",
+  "_localLimit": "Replay mode only. Stops the 2025 fixture after N picks, so a mid-draft state can be tested without hand-editing a board file.",
+  "localLimit": 51,
+
+  "_pollMs": "How often the board file is re-read. Every write already recomputes and pushes immediately; this is the safety net that catches the file being edited by hand.",
   "pollMs": 1500,
 
-  "_season": "Which season the APP DISPLAYS — it reads players.<season>.json and friends. Separate from what `npm run refresh` pulls, which is always the current year. Switching seasons means this key plus a branches/inventory file for that year.",
+  "_season": "Which season the APP DISPLAYS — it reads players.<season>.json, branches.<season>.json, inventory.<season>.json and board.<season>.json. Separate from what `npm run refresh` pulls, which is always the current year. Switching seasons means this key plus those files for that year.",
   "season": 2026,
 
   "_ffb": "thefantasyfootballers.com login, used only by `npm run refresh` to pull your UDK rankings. Never leaves this machine.",
@@ -17,8 +19,5 @@
     "password": "your-password",
     "_scoringSystem": "Which UDK ranking set to pull. One of: STD (4pt QB), STD (6pt QB), HALF (4pt QB), HALF (6pt QB), PPR (4pt QB), PPR (6pt QB). James's league is half-PPR with 6-point passing TDs.",
     "scoringSystem": "HALF (6pt QB)"
-  },
-
-  "_source": "'sheet' reads the live Google Sheet. 'local' reads data/board.local.json instead, so the app runs with no API key — useful for testing before draft day.",
-  "source": "local"
+  }
 }

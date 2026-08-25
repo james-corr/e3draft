@@ -8,15 +8,18 @@ Date created: 08_13_26
 ## What happens here
 
 James's fantasy football draft setup, rebuilt. There were two linked Google Sheets; now there
-is one Google Sheet and one local app.
+is one local app and nothing else.
 
-1. **The shared board** — the file leaguemates enter picks into during the live draft. Stays a
-   Google Sheet permanently; it is the only thing everyone can co-edit. Being rebuilt as a
-   single dumb tab (`DRAFT BOARD`) added to the existing file, at the same URL.
-2. **The command center** — was `JPC USE - Draft 2025 - in use`, a 22-tab Sheet. **Now a local
-   app in this folder.** It reads the shared board and does every calculation itself.
+**The command center** — was `JPC USE - Draft 2025 - in use`, a 22-tab Sheet. Now a local app in
+this folder. It owns the draft board and does every calculation itself.
 
 The old setup took one to two hours to rebuild each year and couldn't keep up during the draft.
+
+**08/24/26 — the shared board is gone.** There is no co-edited Google Sheet this season and no
+Sheets API in the app. James types every pick himself, into the app, which makes it the source
+of truth rather than a reader of one. Everything that follows from that landed in the same
+change: a type-ahead on the pick box, one-click drafting from the board list, plans editable in
+place, team order and "which seat is mine" editable on the BOARD screen, and CLEAR BOARD.
 
 ## Current state (08_18_26) — built and running
 
@@ -24,15 +27,14 @@ The app works end to end against real data. `npm start` or double-click `Start D
 then <http://localhost:4173>.
 
 **Measured, not estimated:**
-- Full recompute: **1.75ms** against a 1–3 second target. The entire remaining budget is network
-  round-trip to Google.
+- Full recompute: **1.75ms** against a 1–3 second target, with no network in the loop at all.
 - Name matching: **216 of 216** real 2025 picks matched, zero failures.
 - 676 players across 11 positions including full IDP.
 
 **What's built:** the draft-day interface (20×12 board grid, tier-banded available pool, the 9
-contingency plans with health meters, my team, transactions log, target locking), the whole
-engine in `lib/`, the Google Sheets read path, a change-detecting poll loop pushing over SSE, the
-board-tab generator, and the migration off the old workbooks.
+contingency plans with health meters, round notes, my team, transactions log, target locking),
+the whole engine in `lib/`, the pick-entry and board-editing write path, a change-detecting poll
+loop pushing over SSE, and the migration off the old workbooks.
 
 **Added 08/18/26:**
 - **The watchlist is one system.** A focus card behind every player name holds the lock, the five
@@ -70,21 +72,20 @@ rounds, and the IDP slots are `D` + `DB`.** Only the keeper round cost is still 
   `scoring` fields, filled from `SCORING.md`. Nothing in `lib/` reads `scoring` yet — it is
   there so a projection or value column has one place to come from.
 
-**What's not connected yet:** the live sheet. Until James does the one-time setup the app reads
-`data/board.local.json` — the complete 2025 draft as a fixture — so it behaves exactly as it
-will on the day. Steps are in `README.md`.
+**Nothing left to connect.** The app is self-contained: picks go to `data/board.<season>.json`
+and `"source": "local"` replays `data/board.local.json`, the complete 2025 draft, as a
+read-only fixture for testing.
 
 See `ROADMAP.md` for state and `PRODUCT.md` for the product record.
 
 ## Decisions locked in
 
 **Architecture (08/13/26):**
-- Shared board stays a Google Sheet. Non-negotiable.
 - Command center is a local app, not a Sheet. IMPORTRANGE plus chained formulas across ~800
   players could never hit 1–3 seconds; in-memory calculation does it in under 2ms.
-- Live connection is a read-only Google Cloud API key against a link-viewable sheet.
-- **The board keeps its existing file and URL** (08/14/26) — a new tab gets added to it rather
-  than starting a new sheet.
+- ~~Shared board stays a Google Sheet~~ — **reversed 08/24/26.** No shared board this season.
+  The app owns `data/board.<season>.json` and James enters every pick. The Sheets read path,
+  the API key, and the board-tab generator are all deleted.
 
 **League facts, captured from James (08/14/26) — these were in neither workbook:**
 - Half-PPR. 12 teams, **20 rounds** (the 2025 board only ever got 18 filled), snake.
@@ -116,20 +117,21 @@ See `ROADMAP.md` for state and `PRODUCT.md` for the product record.
 - James is non-technical. Explain trade-offs plainly and recommend.
 - Never let a pick fail silently — see `CLAUDE.md`, rule 1. It's the one expensive failure.
 - Don't guess league rules. They came from James and live in `PRODUCT.md`.
-- No live Google integration is connected for Claude — work from exported files.
+- No live Google integration anywhere in this project — the app is entirely local.
 
 ## What's left
 
 Top of `ROADMAP.md`. The scoring and roster questions are closed as of 08/23/26; what remains
-needs James rather than code: connect the live sheet, settle the keeper round rule, and rewrite
-the 9 plans and the round notes for this season (they hold 2025's targets today). The last one is now done in the app's setup surface
-— the icon in the PLANS header.
+needs James rather than code: settle the keeper round rule, and rewrite the 9 plans and the
+round notes for this season (they hold 2025's targets today). That last one is now done in the
+app itself — click any plan name or target on the FIELD screen, or the icon in the PLANS
+header for adding and removing rows.
 
 ## Where things live
 
 | What | Where |
 |---|---|
-| How to run it, and the one-time Google setup | `README.md` |
+| How to run it, and how picks get entered | `README.md` |
 | Product record — users, league rules, constraints | `PRODUCT.md` |
 | Scoring values and roster slots, as set in Yahoo | `SCORING.md` (screenshots in `scoring/`) |
 | The same, machine-readable | `rosterSlots` and `scoring` in `data/league.json` |

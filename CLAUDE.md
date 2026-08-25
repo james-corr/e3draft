@@ -5,8 +5,12 @@ Plans live in `plans/`. This file is the house rules.
 
 ## What this is
 
-James's fantasy football draft command center. The shared board stays a Google Sheet his
-leaguemates co-edit live; this app reads it and does all the thinking. See `PRODUCT.md`.
+James's fantasy football draft command center. This app IS the board: James types every pick
+into it and it does all the thinking. See `PRODUCT.md`.
+
+It was built around a shared Google Sheet the leaguemates co-edited. That is gone as of
+08/24/26 — no shared board this year, no Sheets API, no second source of truth. If you find a
+comment or a doc that still says otherwise, it is stale; fix it.
 
 ## The rules that matter
 
@@ -14,15 +18,17 @@ leaguemates co-edit live; this app reads it and does all the thinking. See `PROD
    screen as an unmatched pick. A drafted player shown as available costs James a pick, and it
    is the only failure in this app that is genuinely expensive. Do not "helpfully" fuzzy-match
    your way past ambiguity — `lib/players.js` deliberately refuses to guess between two players
-   with the same surname.
+   with the same surname. The same reasoning makes a pick never *refused*: `addPick` records an
+   unmatched name, and a duplicate is recorded and reported rather than blocked.
 
-2. **The sheet stays dumb.** No formulas, no hidden tabs, no IMPORTRANGE. Every calculation
-   belongs in `lib/state.js`. The old setup put the engine in the spreadsheet and that is
-   precisely what made it too slow and too fragile.
+2. **The board file stays dumb.** `data/board.<season>.json` is a grid of typed names and
+   nothing else. Every calculation belongs in `lib/state.js`. The old setup put the engine in a
+   spreadsheet and that is precisely what made it too slow and too fragile. Team names come
+   from `league.json`, never from the grid's row 0 — one owner for who drafts where.
 
-3. **Speed budget is 1–3 seconds end to end.** Local recompute is ~1.75ms, so effectively all
-   of it is network. Don't add per-render work in the client; the server ships whole computed
-   states and the client only frames them.
+3. **Speed budget is 1–3 seconds end to end.** Local recompute is ~1.75ms and there is no
+   network in the loop at all, so this is now met with enormous margin. Don't spend it: the
+   server ships whole computed states and the client only frames them.
 
 4. **James is not a developer.** Explain trade-offs in plain terms and give a recommendation.
 
@@ -35,7 +41,7 @@ leaguemates co-edit live; this app reads it and does all the thinking. See `PROD
    Don't build a second mechanism beside it.
 
 7. **The plans are the real asset.** `data/branches.<year>.json` holds years of accumulated
-   judgment that cannot be reconstructed from the sheet or the exports. Every write goes through
+   judgment that cannot be reconstructed from the board or the exports. Every write goes through
    `validatePlan` and leaves a `.bak`, and anything the save drops is reported back to the screen.
 
 8. **Two-way players are one human.** A player listed at two positions holds two rows on
@@ -75,11 +81,13 @@ touching the interface, and keep it accurate.
 
 ## Testing
 
-`config.json` takes three sources. `"local"` plus `"localLimit": <n>` replays the 2025 draft
-partway; `"mock"` reads `data/board.mock.json` and turns on the in-app pick box (`lib/mock.js`,
-`/api/mock/*`), which is how a mock draft is run with no Google setup; `"sheet"` is the real
-thing. The pick box is mock-only and the server enforces that — nothing may write picks while
-the app is pointed at the sheet, where the leaguemates' typing is the source of truth.
+`config.json` takes two sources. The default writes and reads `data/board.<season>.json` with
+the pick box on (`lib/picks.js`, `/api/board/*`) — that is the real board. `"local"` plus
+`"localLimit": <n>` replays the 2025 draft partway from `data/board.local.json`; the board is
+read-only there and the server refuses `/api/board/*`, because that fixture is the only replay
+we have and nothing may overwrite it.
+
+A mock draft is now just a draft: clear the board, run it, clear it again.
 
 `?static=1` on the URL renders one snapshot instead of opening the SSE stream, which is
 how headless screenshots are taken — the live page never finishes loading, so capture hangs

@@ -1,4 +1,4 @@
-# Secrets — the Google API key lives here. Never commit.
+# Secrets — the Fantasy Footballers login lives here. Never commit.
 config.json
 
 # Python venv used by the one-time xlsx extraction
@@ -11,15 +11,11 @@ config.json
 .impeccable/config.local.json
 .impeccable/hook.cache.json
 
-# Generated board tab (regenerate with tools/make-board-tab.mjs)
-out/
-
 # One-save-back copy the plan editor leaves behind
 data/*.json.bak
 
-# Mock-draft scratch board, written by the in-app pick box. Regenerates itself;
-# the real fixture is data/board.local.json and that one IS committed.
-data/board.mock.json
+# The draft board IS committed — data/board.<season>.json is the record of the
+# draft, the same way data/board.local.json holds 2025. Nothing to ignore here.
 
 # Build-time screenshots
 .impeccable/shots/

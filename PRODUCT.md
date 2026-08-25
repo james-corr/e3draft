@@ -15,9 +15,10 @@ JSON files on disk.
 
 ## Users
 
-One user: James, drafting his fantasy football team. Twelve-team league, twenty rounds, snake
-order; he picks tenth. His leaguemates are secondary users who only ever touch the shared
-Google Sheet board, never this app.
+One user: James. Twelve-team league, twenty rounds, snake order. He types every pick in the
+draft into this app — his own and everyone else's — so there are no secondary users and no
+second surface. (Through 2025 the league co-edited a shared Google Sheet board and this app
+read it; that arrangement ended 08/24/26.)
 
 ## Product Purpose
 
@@ -41,11 +42,12 @@ knows. Its live truth comes from the league's real shared board, not from a rank
 - **The draft is in person, on a laptop, outdoors in bright daylight.** This is the governing
   physical constraint on the interface: sunlight on a laptop panel. It rules out dark grounds
   (they mirror-reflect outdoors), low-contrast greys, and light type weights.
-- Leaguemates enter picks into a shared Google Sheet as they happen. That sheet stays a Google
-  Sheet permanently — it is the one thing everyone can co-edit live. Non-negotiable.
-- This app reads that sheet read-only via a Google Cloud API key and does every calculation
-  locally. The old setup used IMPORTRANGE plus chained formulas across ~800 players, which is
-  what made it too slow.
+- **There is no shared board.** James enters every pick himself, into this app, on the laptop
+  in front of him. The app owns the draft record outright — `data/board.<season>.json` — and
+  nothing else writes it. Decided 08/24/26; it replaced a shared Google Sheet the league
+  co-edited.
+- Every calculation happens locally, in memory. The old setup used IMPORTRANGE plus chained
+  formulas across ~800 players, which is what made it too slow.
 - Ranking data comes from FantasyPros consensus as the base player list, enriched with Fantasy
   Footballers tier/risk/ADP/upside. **Automated since 08/18/26** — `npm run refresh` pulls the
   Fantasy Footballers UDK directly (`tools/ingest/`). This reverses the earlier "scraping is out
@@ -71,7 +73,7 @@ knows. Its live truth comes from the league's real shared board, not from a rank
   one of his rows.
 - **Speed budget:** one to three seconds from a leaguemate typing a pick to it appearing here.
   Local recompute measures 1.75ms, so effectively the entire budget is network round-trip.
-- **Name matching is the real risk.** Picks are hand-typed into the sheet under time pressure.
+- **Name matching is the real risk.** Picks are hand-typed under time pressure.
   A pick that fails to match would leave a drafted player showing as available — the single
   worst failure this app can have — so unmatched entries must be surfaced loudly, never dropped.
 - **Deferred, do not build:** ingesting Fantasy Footballers podcast transcripts for LLM-backed
@@ -100,8 +102,9 @@ Not on hand and not to be fabricated: this year's rankings, this year's keeper s
 
 1. **Wrong-and-confident is the only unacceptable failure.** Showing a drafted player as
    available loses James a pick. Uncertainty gets surfaced, never smoothed over.
-2. **The sheet stays dumb; the app holds the logic.** Every formula removed from the shared
-   board is a thing that cannot break under a leaguemate's cursor mid-draft.
+2. **The board file stays dumb; the app holds the logic.** The board is a grid of typed names
+   and nothing else. Every calculation that isn't in `lib/state.js` is a thing that can drift
+   out of agreement with the one that is.
 3. **Glanceable beats complete.** On the clock, James reads the screen for seconds. Density is
    fine; hunting is not.
 4. **Carry his years of accumulated judgment forward.** The branch plans and round notes are

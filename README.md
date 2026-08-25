@@ -1,11 +1,11 @@
 # E3 Draft — Command Center
 
-James's fantasy football draft command center. Reads the league's shared Google Sheet board
-live and does every taken/available/tier calculation locally.
+James's fantasy football draft command center. Every pick is typed into this app, and it does
+every taken/available/tier calculation locally.
 
 Replaces a 22-tab Google Sheet that took one to two hours to rebuild each year and could not
-keep up during the draft. A full recompute now measures **1.75ms** against a 1–3 second target,
-so the only real cost is the network round-trip to Google.
+keep up during the draft. A full recompute measures **1.75ms** against a 1–3 second target, and
+there is no network in the loop at all — the board is a file on this machine.
 
 ## Running it
 
@@ -31,14 +31,16 @@ SUN is the default because the draft happens outdoors on a laptop in bright dayl
 there for anywhere darker. The choice is remembered.
 
 Click the bracket icon on any player to lock them as a target; they show up under TARGET. Click
-the player's **name** instead and a focus card opens with everything known about him, plus the
-watch tags and a place to write why he's on your list.
+the record mark beside it to mark him drafted. Click the player's **name** instead and a focus
+card opens with everything known about him, plus the watch tags and a place to write why he's on
+your list.
 
 ## Reading the screen
 
-- **REC lamp** (top left) — the live connection. Pulsing means picks are flowing. `HOLD` means
-  the stream dropped and is reconnecting. `NO SIG` means the sheet can't be read at all.
-- **CHECK SHEET** — a zebra-striped band appears when someone typed a name the app can't match.
+- **REC lamp** (top left) — recording. `HOLD` means the browser's stream dropped and is
+  reconnecting. `NO SIG` means the board file can't be read at all. `REPLAY` means the app is
+  pointed at the 2025 fixture rather than this year's board.
+- **CHECK SHEET** — a zebra-striped band appears when a name on the board can't be matched.
   It names the pick and suggests a correction. **This is the one thing to never ignore**: an
   unmatched pick means a drafted player is still showing as available.
 - **Tier bands** — each position's best remaining tier shows how many are left. When it drops to
@@ -46,9 +48,12 @@ watch tags and a place to write why he's on your list.
 - **PLANS** — your contingency branches. The meter is how much of that plan is still on the
   board, so you can see at a glance which strategy the draft has left intact. Struck-through
   names show the round.pick where they actually went.
-- **The cue strip** (just under the top rail) — your own note for the round in play, or the next
-  one coming. These are the margin notes from the old sheet: when the kicker run starts, where
-  the RB deadzone is. Every one of them also sits on its own round in the BOARD view.
+- **The cue strip** (just under the pick box) — your own note for the round in play, or the
+  next one coming. These are the margin notes from the old sheet: when the kicker run starts,
+  where the RB deadzone is.
+- **ROUND NOTES** (top of the right column on FIELD) — the whole run of those notes, scrolling.
+  The round in play is marked and the rounds behind you are struck through, so reading ahead
+  costs nothing.
 - **The watchlist chips** (under the position filter) — LOCKED plus whichever tags you've used.
   Click one to narrow the board to just those players; click it again to clear. The count is how
   many are still available, so a chip always promises what it shows.
@@ -61,8 +66,13 @@ Fliers**, **My Guys**. A tag and a lock are one record — a lock says *I want h
 
 ## Setup: writing the plans and notes
 
-Click the setup icon in the **PLANS** header. That opens the prep surface, where the contingency
-plans and round notes are edited directly — no JSON, no spreadsheet.
+Plans can be edited straight from the FIELD screen: click a plan's name to rename it, or any
+target's name to swap in a different player — the same type-ahead as the pick box. Both save
+immediately.
+
+Adding and removing rows lives in the prep surface, behind the setup icon in the **PLANS**
+header, where the contingency plans and round notes are edited in bulk — no JSON, no
+spreadsheet.
 
 - Name fields autocomplete against the real player pool.
 - Every target is checked against **the same matcher that reads the board on draft day**. A row
@@ -75,65 +85,41 @@ plans and round notes are edited directly — no JSON, no spreadsheet.
   `data/branches.<year>.json.bak`, and rows missing a round or a name are dropped with a count
   reported back rather than vanishing quietly.
 
-## Mock drafts, without any Google setup
+## Entering picks
 
-Set `"source": "mock"` in `config.json` and a **pick entry strip** appears above the bottom
-rail. Type the name of whoever just went, press enter, and it lands on the board — same
-matcher, same engine, same everything the real draft uses. The REC lamp in the top-left reads
-**MOCK** the whole time, so a rehearsal can never be mistaken for the real thing.
+Every pick in the draft comes through this app. There are two ways in, and both do exactly the
+same thing:
 
-- It tells you who is on the clock, so you always know whose pick you are typing.
+**The pick box**, under the top rail on every screen. Type who just went, press enter. It
+tells you who is on the clock so you always know whose pick you're typing.
+
+- **Type-ahead.** Start typing and a list of matching players drops down. Arrow keys move
+  through it; **enter takes the highlighted one, or the first one if you haven't touched an
+  arrow key**. Players already off the board are shown struck through and marked GONE.
 - It echoes who the name actually resolved to. `dk metcalf` landing on DK Metcalf is how you
   learn to trust the matcher before it matters.
-- A name it cannot place is still recorded, and shows up as an unmatched pick — exactly what
-  happens when a leaguemate fat-fingers a name into the real sheet. It is not rejected.
+- A name it cannot place is still recorded, and shows up as an unmatched pick under CHECK
+  SHEET. It is never rejected — a refused pick is a pick you think you made and didn't.
+- A player entered twice is also recorded, but the echo says loudly where he already went.
 - **UNDO** takes back the last pick.
 
-Picks go to `data/board.mock.json`, which is gitignored and separate from
-`data/board.local.json` — the 2025 draft kept as a replay fixture. A mock can never overwrite it.
+**The take button** on any row in ON THE BOARD — the small record mark on the right of the
+row. One click marks that player drafted at whatever pick is next. No confirmation: UNDO is
+right there, and a dialog on every one of 240 picks costs more than the occasional mis-click.
 
-The pick box is deliberately unavailable when `"source": "sheet"`, and the server refuses
-`/api/mock/*` in that mode rather than trusting the UI to hide the control. On draft day the
-leaguemates' typing in the sheet is the source of truth, and nothing local should be able to
-write over it.
+Picks are written to `data/board.<season>.json`.
 
-## One-time setup: connecting the live board
+## The BOARD screen
 
-Until this is done the app runs off `data/board.local.json` (the 2025 draft, as a test fixture),
-so you can click around now and it will behave exactly as it will on the day.
+**TEAMS** turns the header row into fields. Rename anyone, use ◀ ▶ to change the draft order,
+and **YOU** marks which column is yours. Nothing is written until SAVE.
 
-**1. Add the board tab to the shared sheet.**
+Reordering moves each team's picks with them — a manager keeps everyone they've already taken
+and only their place in the snake changes. If there are picks on the board it asks first,
+because that re-cuts the whole snake from that point on.
 
-```bash
-node tools/make-board-tab.mjs
-```
-
-Then in the existing E3 Draft sheet: *File → Import → Upload*, pick `out/DRAFT BOARD.csv`, and
-choose **Insert new sheet(s)** — not "replace spreadsheet". Rename the new tab to exactly
-`DRAFT BOARD` and freeze row 1 and column A.
-
-Tell your leaguemates: **type the player's name only.** No position, no team, no bye week — the
-app fills all of that in. Names are matched loosely (`D.K. Metcalf`, `DK Metcalf`, and
-`dk metcalf` all work), and anything that doesn't match gets flagged on screen rather than
-silently dropped.
-
-**2. Share the sheet as link-viewable.** *Share → General access → Anyone with the link →
-Viewer.* Editing stays restricted to whoever it is now; the app only ever reads.
-
-**3. Get a Google API key.** At <https://console.cloud.google.com>: create a project, then
-*APIs & Services → Library →* enable **Google Sheets API**, then *Credentials → Create
-credentials → API key*. Restrict it to the Sheets API. Takes about five minutes.
-
-**4. Point the app at the board.**
-
-```bash
-cp config.example.json config.json
-```
-
-Fill in `sheetId` (the long string in the sheet's URL between `/d/` and `/edit`), `apiKey`, and
-set `"source": "sheet"`.
-
-`config.json` is gitignored. The key never gets committed.
+**CLEAR BOARD** wipes every pick. That is also how you rehearse: clear, run a mock draft
+through the same screens you'll use on the day, clear again.
 
 ## The yearly refresh
 
@@ -185,22 +171,25 @@ depends on and prints which one moved.
 ## How it fits together
 
 ```
-shared Google Sheet          this app
-┌──────────────────┐         ┌────────────────────────────────┐
-│  DRAFT BOARD tab │ ──API──▶│ lib/board.js    reads the grid │
-│  names only,     │  read   │ lib/players.js  matches names  │
-│  no formulas     │  only   │ lib/state.js    the whole      │
-└──────────────────┘         │                 engine, 1.75ms │
-        ▲                    │ server.js       polls + pushes │
-        │                    └───────────┬────────────────────┘
-   leaguemates                           │ SSE
-   type picks                            ▼
-                                   browser tab
+                    ┌────────────────────────────────┐
+   you type    ──▶  │ server.js       writes the grid│
+   a pick           │ lib/picks.js    board.<yr>.json│
+                    │ lib/board.js    reads it back  │
+                    │ lib/players.js  matches names  │
+                    │ lib/state.js    the whole      │
+                    │                 engine, 1.75ms │
+                    └───────────┬────────────────────┘
+                                │ SSE
+                                ▼
+                          browser tab
 ```
 
-The server polls the sheet, recomputes only when the board actually changed, and pushes the new
-state to the browser over Server-Sent Events. The client never calculates anything — it only
-frames what it is handed.
+Every pick lands in `data/board.<season>.json`, is read back through the same matcher and
+engine, and the new state is pushed to the browser over Server-Sent Events. The client never
+calculates anything — it only frames what it is handed.
+
+There is no shared board and no network hop. It was a Google Sheet the leaguemates co-edited
+in 2025; this year James types every pick himself, so the app owns the board outright.
 
 ## Layout
 
@@ -209,19 +198,23 @@ frames what it is handed.
 | `server.js` | HTTP server, poll loop, SSE |
 | `lib/state.js` | The engine: taken/available, tiers, rosters, plan health |
 | `lib/players.js` | Player pool and the name matcher |
-| `lib/board.js` | Reads the sheet (or the local fixture) |
-| `lib/store.js` | Saves the watchlist and the plans to disk, atomically |
+| `lib/board.js` | Reads the board grid (this year's, or the 2025 fixture) |
+| `lib/picks.js` | Writes it: picks, undo, clear, team order |
+| `lib/store.js` | Saves the watchlist, the plans and the league to disk, atomically |
 | `public/app.js` | The viewfinder: renders whatever state the server sends |
+| `public/combobox.js` | The name type-ahead, shared by the pick box and the plans |
 | `public/setup.js` | The prep surface: editing plans and round notes |
 | `public/` | The interface |
-| `data/` | Players, league config, contingency plans, saved targets |
-| `tools/` | The xlsx migration and the board-tab generator |
+| `data/` | Players, league config, the board, contingency plans, saved targets |
+| `tools/` | The xlsx migration and the rankings ingest |
 | `plans/` | Design and build plans |
 
-## Testing without the sheet
+## Testing against the 2025 draft
 
-`config.json` accepts `"localLimit": <n>` to replay the 2025 fixture partway, so you can see a
-realistic mid-draft state. `51` puts you six picks away from being on the clock in round 5.
+Set `"source": "local"` in `config.json` to replay `data/board.local.json`, the complete 2025
+draft kept as a fixture. `"localLimit": <n>` stops it partway, so you can see a realistic
+mid-draft state — `51` puts you six picks away from being on the clock in round 5. The board is
+read-only in this mode: the pick box is hidden and the server refuses to write.
 
 Adding `?static=1` to the URL renders one snapshot without opening the live stream — useful for
 screenshots and debugging. The URL also takes `?view=grid|field|player`, `?exposure=sun|night`,

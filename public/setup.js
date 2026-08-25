@@ -20,6 +20,7 @@ let baseline = ""; // serialized draft as last loaded or saved, for dirty checks
 let pool = null; // the full player list, fetched once per open
 let checkTimer = null;
 let hintTimer = null;
+let onClose = null;
 /* Last known verdict per typed name. Kept across rebuilds so adding a row
    doesn't blank every status while the next check is in flight. */
 const verdicts = new Map();
@@ -77,6 +78,8 @@ export function closeSetup({ force = false } = {}) {
   if (!force && isDirty() && !confirm("Close setup and lose the unsaved edits?")) return false;
   e.root.hidden = true;
   draft = null;
+  // The FIELD screen edits the same plan file in place and holds its own copy.
+  onClose?.();
   return true;
 }
 
@@ -438,8 +441,9 @@ function hint(text, bad = false) {
 
 /* ---------------------------------------------------------------- wiring */
 
-export function initSetup() {
+export function initSetup({ onClose: closed } = {}) {
   const e = handles();
+  onClose = closed;
   e.body.addEventListener("input", onInput);
   e.body.addEventListener("click", onClick);
   e.save.addEventListener("click", save);

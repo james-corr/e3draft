@@ -4,6 +4,7 @@
 
 import { esc, adp, tier, seg } from "./util.js";
 import { openSetup, closeSetup, isSetupOpen, initSetup } from "./setup.js";
+import { attachCombobox } from "./combobox.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -31,7 +32,14 @@ const el = {
   teamBody: $("teamBody"),
   nextPick: $("nextPick"),
   logList: $("logList"),
+  notesList: $("notesList"),
+  notesMeta: $("notesMeta"),
   gridBody: $("gridBody"),
+  gridMeta: $("gridMeta"),
+  teamsEdit: $("teamsEdit"),
+  teamsSave: $("teamsSave"),
+  teamsCancel: $("teamsCancel"),
+  boardClear: $("boardClear"),
   playerBody: $("playerBody"),
   zoomTrack: $("zoomTrack"),
   zoomFill: $("zoomFill"),
@@ -59,11 +67,18 @@ const ICON = {
   lock: `<svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"><path d="M2 5.5V2h3.5M14 5.5V2h-3.5M2 10.5V14h3.5M14 10.5V14h-3.5"/></svg>`,
   cross: `<svg class="emptyframe__cross" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 5v10M20 25v10M5 20h10M25 20h10"/><circle cx="20" cy="20" r="2.8"/></svg>`,
   locked: `<svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="square"><path d="M4 6.5V4h2.5M12 6.5V4h-2.5M4 9.5V12h2.5M12 9.5V12h-2.5"/><circle cx="8" cy="8" r="1.6" fill="currentColor" stroke="none"/></svg>`,
+  // The record button: taking a player is committing him to the tape.
+  rec: `<svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="4.2" fill="currentColor" stroke="none"/><circle cx="8" cy="8" r="6.6"/></svg>`,
 };
 
 /* One player row, used by ON THE BOARD and by TARGET. The name block is the
-   button that opens the focus card; the lock stays a separate one-click path,
-   because during the draft starring has to cost nothing. */
+   button that opens the focus card; the lock and the take button stay separate
+   one-click paths, because during the draft neither can cost a detour.
+
+   TAKE consumes whatever pick is next on the board, whoever it belongs to —
+   that is the whole job, since James is now typing every team's picks. It gets
+   no confirm dialog: UNDO is one key away in the entry strip, and a modal on
+   every pick would cost more over 240 picks than the occasional mis-click. */
 function playerRow(p, { starred, tags = [], note = "", taken = false, wentAt = null, wentTo = null }) {
   const bits = [p.pos, p.team ?? "—", `BYE ${p.bye ?? "—"}`];
   if (taken) bits.push(`GONE ${wentAt ?? ""} ${wentTo ?? ""}`.trim());
@@ -92,8 +107,21 @@ function playerRow(p, { starred, tags = [], note = "", taken = false, wentAt = n
         aria-label="${starred ? "Unlock" : "Lock"} ${esc(p.name)} as a target">${
           starred ? ICON.locked : ICON.lock
         }</button>
+      ${
+        taken
+          ? ""
+          : `<button class="take" data-draft="${esc(p.name)}"
+              aria-label="Mark ${esc(p.name)} drafted${nextSlotLabel()}">${ICON.rec}</button>`
+      }
     </span>
   </div>`;
+}
+
+/* Named in the take button's label so a screen reader hears which pick is about
+   to be consumed, not just that something will be. */
+function nextSlotLabel() {
+  const at = state?.board?.onTheClock;
+  return at ? ` — takes pick ${at.label}, ${at.team}` : "";
 }
 
 let state = null;
@@ -114,6 +142,49 @@ let watch = new Map();
 let focusId = null;
 let focusReturn = null;
 
+/* Every player in the pool, fetched once at boot. The stream only carries who
+   is still AVAILABLE, and the type-ahead has to be able to offer a name that is
+   already gone — both to say so, and because a plan written months ago names
+   players who since went off the board. `taken` is stamped on per payload. */
+let allPlayers = [];
+
+/* The raw plan as it sits on disk, so the FIELD screen can edit it in place.
+   The stream carries the COMPUTED branches, where names are resolved and rows
+   are scored; that is the wrong thing to write back. */
+let rawPlan = null;
+
+async function loadPlayerList() {
+  try {
+    allPlayers = await fetch("/api/players").then((r) => r.json());
+  } catch (err) {
+    console.error("couldn't read the player list", err);
+  }
+}
+
+async function loadPlan() {
+  try {
+    rawPlan = await fetch("/api/plan").then((r) => r.json());
+  } catch (err) {
+    console.error("couldn't read the plans", err);
+  }
+}
+
+/* Ids already on the board. Rebuilt per payload from what the pool no longer
+   holds — the server is the one that decides who a typed name resolved to. */
+let takenIds = new Set();
+
+/* The type-ahead's candidate list: pool order, with taken players marked and
+   pushed to the back so the obvious pick is never below a drafted one. */
+function pickCandidates() {
+  const open = [];
+  const gone = [];
+  for (const p of allPlayers) {
+    p.taken = takenIds.has(p.id);
+    (p.taken ? gone : open).push(p);
+  }
+  return open.concat(gone);
+}
+
 /* ------------------------------------------------------------------ rails */
 
 function renderRails(payload) {
@@ -122,11 +193,11 @@ function renderRails(payload) {
   if (!payload.ok) {
     el.lamp.dataset.state = "error";
     el.lampText.textContent = "NO SIG";
-  } else if (payload.canEnterPicks) {
-    // Reading a mock board. Say so in the one place that is always on screen,
-    // so a rehearsal can never be mistaken for the real draft.
+  } else if (!payload.canEnterPicks) {
+    // Replay mode: an old draft being read back off the fixture, not a live
+    // one. Say so in the one place that is always on screen.
     el.lamp.dataset.state = "mock";
-    el.lampText.textContent = "MOCK";
+    el.lampText.textContent = "REPLAY";
   } else {
     el.lamp.dataset.state = "live";
     el.lampText.textContent = "REC";
@@ -245,6 +316,33 @@ function renderCue(s) {
   el.cue.dataset.ahead = String(!here);
   el.cueRd.textContent = `R${String(note.round).padStart(2, "0")}`;
   el.cueText.innerHTML = noteMarkup(note.text);
+}
+
+/* ------------------------------------------------------------ round notes */
+
+/* The whole run of notes, in one scrolling column on the FIELD screen. They
+   used to be written across the board grid a round at a time, which meant
+   reading ahead cost a trip to another framing — and reading ahead is most of
+   what they are for. The cue strip still calls the round in play; this is the
+   rest of the tape. */
+function renderNotes(s) {
+  const round = s.board.onTheClock?.round ?? null;
+  const notes = [...(s.notes || [])].sort((a, b) => a.round - b.round);
+
+  const ahead = round ? notes.filter((n) => n.round >= round).length : notes.length;
+  el.notesMeta.textContent = notes.length ? `${ahead} ahead` : "";
+
+  el.notesList.innerHTML =
+    notes
+      .map((n) => {
+        const state = round === null ? "" : n.round < round ? "past" : n.round === round ? "now" : "ahead";
+        return `<div class="rnote" data-state="${state}">
+          <span class="rnote__rd seg">R${String(n.round).padStart(2, "0")}</span>
+          <p class="rnote__text">${noteMarkup(n.text)}</p>
+        </div>`;
+      })
+      .join("") ||
+    `<p class="empty">No round notes yet. Write them in SETUP — they're the one thing here no rankings feed knows.</p>`;
 }
 
 /* ------------------------------------------------------------ on the board */
@@ -381,6 +479,10 @@ function renderBoard(s) {
 /* ------------------------------------------------------------------ plans */
 
 function renderPlans(s) {
+  // A pick landing mid-edit must not yank the field out from under the caret.
+  // The panel repaints as soon as the edit closes, which is a moment later.
+  if (editing && el.plansList.contains(editing.host)) return;
+
   const live = s.branches.filter((b) => b.liveCount > 0).length;
   el.plansMeta.textContent = `${live} of ${s.branches.length} alive`;
 
@@ -398,14 +500,16 @@ function renderPlans(s) {
             const right = t.unknown ? "note" : t.taken ? esc(t.wentAt ?? "gone") : "open";
             return `<div class="ptarget ptarget--${kind}">
               <span class="ptarget__rd">R${String(t.round).padStart(2, "0")}</span>
-              <span class="ptarget__name">${esc(t.name)}</span>
+              <button class="ptarget__name" data-edit-target="${b.index}:${t.index}"
+                title="Change this target">${esc(t.name)}</button>
               <span class="ptarget__at">${right}</span>
             </div>`;
           })
           .join("");
         return `<article class="plan${cls}">
           <div class="plan__head">
-            <span class="plan__name">${esc(b.label)}</span>
+            <button class="plan__name" data-edit-label="${b.index}"
+              title="Rename this plan">${esc(b.label)}</button>
             <span class="plan__health">
               <span class="meter"><span class="meter__fill" style="transform:scaleX(${b.health / 100})"></span></span>
               <span class="plan__pct">${b.health}%</span>
@@ -415,6 +519,123 @@ function renderPlans(s) {
         </article>`;
       })
       .join("") || `<p class="empty">No plans yet.</p>`;
+}
+
+/* ------------------------------------------------------- editing the plans */
+
+/* The plans are the one thing in this app that cannot be reconstructed from
+   anywhere else — years of accumulated judgment (CLAUDE.md rule 7) — so every
+   inline edit goes through the same POST /api/plan the setup editor uses, which
+   validates, leaves a .bak, and reports what it dropped.
+
+   Swapping a name in place is the common draft-day move: the plan said Gibbs,
+   Gibbs is gone, the branch now runs through someone else. Adding and deleting
+   rows stays in SETUP — that is a between-drafts job. */
+
+let editing = null; // { el, combo } — the one field open at a time
+
+function stopEditing({ save = false } = {}) {
+  if (!editing) return;
+  const { host, combo, commit } = editing;
+  editing = null;
+  combo?.destroy();
+  if (save) commit();
+  else host.replaceWith(host.__was);
+}
+
+/** Swap a rendered label/name for a text field, and put it back when done. */
+function editInPlace(host, { value, combobox, onSave }) {
+  stopEditing();
+  const was = host;
+  const input = document.createElement("input");
+  input.type = "text";
+  input.className = `${host.className} ${host.className}--editing`;
+  input.value = value;
+  input.spellcheck = false;
+  input.setAttribute("aria-label", host.title || "Edit");
+
+  const commit = () => {
+    const next = input.value.trim();
+    input.replaceWith(was);
+    // An emptied field reverts rather than saving. validatePlan drops rows with
+    // no text in them, so a stray backspace here would silently delete a target
+    // — the one kind of data loss this file is careful about.
+    if (next && next !== value) onSave(next);
+  };
+
+  host.replaceWith(input);
+  input.__was = was;
+  editing = { host: input, commit, combo: null };
+
+  if (combobox) {
+    editing.combo = attachCombobox(input, {
+      getItems: pickCandidates,
+      onPick: () => stopEditing({ save: true }),
+      onCommit: () => stopEditing({ save: true }),
+    });
+  } else {
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        stopEditing({ save: true });
+      } else if (e.key === "Escape") {
+        e.stopPropagation();
+        stopEditing();
+      }
+    });
+  }
+
+  input.addEventListener("blur", () => setTimeout(() => stopEditing({ save: true }), 140));
+  input.focus();
+  input.select();
+}
+
+async function savePlan() {
+  const res = await fetch("/api/plan", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(rawPlan),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.error || `save failed: ${res.status}`);
+  rawPlan = body.plan; // take back what is actually on disk
+}
+
+function editPlanTarget(host, bi, ti) {
+  const pick = rawPlan?.branches?.[bi]?.picks?.[ti];
+  if (!pick) return;
+  editInPlace(host, {
+    value: pick.player,
+    combobox: true,
+    onSave: (next) => {
+      const was = pick.player;
+      pick.player = next;
+      savePlan().catch((err) => {
+        pick.player = was;
+        echo("error", `plan not changed: ${err.message}`);
+      });
+    },
+  });
+}
+
+function editPlanLabel(host, bi) {
+  const branch = rawPlan?.branches?.[bi];
+  if (!branch) return;
+  editInPlace(host, {
+    value: branch.label,
+    combobox: false,
+    onSave: (next) => {
+      const was = { label: branch.label, named: branch.named };
+      branch.label = next;
+      // Same rule the setup editor uses: a plan James has actually named is one
+      // he thinks in, and the board treats those differently from "Plan 4".
+      branch.named = !/^plan \d+$/i.test(next);
+      savePlan().catch((err) => {
+        Object.assign(branch, was);
+        echo("error", `plan not renamed: ${err.message}`);
+      });
+    },
+  });
 }
 
 /* ---------------------------------------------------------------- my team */
@@ -512,35 +733,142 @@ function renderLog(s) {
 
 /* ---------------------------------------------------------------- the grid */
 
-function renderGrid(s) {
-  const { teams, rounds, myIndex } = s.league;
+/* Who is drafting, in what order, and which column is James.
+   `null` when TEAMS mode is closed. `order` is old-index-per-new-slot, which is
+   exactly what POST /api/league takes — the identity order means nothing moved
+   and only names changed. */
+let teamsDraft = null;
+
+function teamHeader(name, i, myIndex) {
+  const mine = i === myIndex;
+  if (!teamsDraft) {
+    return `<th scope="col"${mine ? ' class="is-mine"' : ""}>${esc(name)}${
+      mine ? `<span class="grid__me">YOU</span>` : ""
+    }</th>`;
+  }
+  const last = teamsDraft.names.length - 1;
+  return `<th scope="col" class="grid__edit${mine ? " is-mine" : ""}">
+    <span class="grid__move">
+      <button class="movebtn" data-move="${i}:-1" ${i === 0 ? "disabled" : ""}
+        aria-label="Move ${esc(name)} one slot earlier">◀</button>
+      <button class="movebtn" data-move="${i}:1" ${i === last ? "disabled" : ""}
+        aria-label="Move ${esc(name)} one slot later">▶</button>
+    </span>
+    <input class="grid__name-input" type="text" spellcheck="false" data-team="${i}"
+      value="${esc(name)}" aria-label="Name of the team drafting ${i + 1}${ordinalSuffix(i + 1)}" />
+    <button class="mebtn" data-me="${i}" aria-pressed="${mine}"
+      aria-label="${mine ? "You are" : "Mark yourself as"} ${esc(name)}">YOU</button>
+  </th>`;
+}
+
+function ordinalSuffix(n) {
+  if (n % 100 >= 11 && n % 100 <= 13) return "th";
+  return { 1: "st", 2: "nd", 3: "rd" }[n % 10] || "th";
+}
+
+function openTeams() {
+  if (!state) return;
+  teamsDraft = {
+    names: [...state.league.teams],
+    order: state.league.teams.map((_, i) => i),
+    myTeam: state.league.myTeam,
+  };
+  paintTeamsMode();
+  renderGrid(state);
+  el.gridBody.querySelector(".grid__name-input")?.focus();
+}
+
+function closeTeams() {
+  teamsDraft = null;
+  paintTeamsMode();
+  if (state) renderGrid(state);
+}
+
+function paintTeamsMode() {
+  const on = Boolean(teamsDraft);
+  el.teamsEdit.hidden = on;
+  el.boardClear.hidden = on;
+  el.teamsSave.hidden = !on;
+  el.teamsCancel.hidden = !on;
+  el.gridMeta.textContent = on
+    ? "rename · ◀▶ to reorder · YOU marks your seat"
+    : `${state?.league?.rounds ?? 20} rounds · snake`;
+}
+
+async function saveTeams() {
+  if (!teamsDraft) return;
+  const moved = teamsDraft.order.some((from, to) => from !== to);
+  const made = state?.board?.madePicks ?? 0;
+
+  // Reordering re-cuts the snake. Each team keeps the players they already
+  // took, but from here on they pick from a different seat — which is the point
+  // of reordering, and also the kind of thing worth being sure about.
+  if (moved && made > 0) {
+    const ok = confirm(
+      `Reorder the draft with ${made} pick${made === 1 ? "" : "s"} already on the board?\n\n` +
+        `Every team keeps the players they've taken — they move to the new column with them. ` +
+        `What changes is the snake order from here on.`
+    );
+    if (!ok) return;
+  }
+
+  el.teamsSave.disabled = true;
+  try {
+    const res = await fetch("/api/league", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        teams: teamsDraft.names,
+        myTeam: teamsDraft.myTeam,
+        order: teamsDraft.order,
+      }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.error || `save failed: ${res.status}`);
+    closeTeams();
+    echo("hit", moved ? "Teams saved and the board reordered." : "Teams saved.");
+  } catch (err) {
+    echo("error", `Teams not saved: ${err.message}`);
+  } finally {
+    el.teamsSave.disabled = false;
+  }
+}
+
+
+/**
+ * `fromStream` marks the repaint that a new payload triggered, as opposed to
+ * one TEAMS mode asked for. A pick landing while a team name is being typed
+ * must not rebuild the header and take the caret with it — but the ◀▶ and YOU
+ * buttons rebuild it on purpose, from inside that same focused region, so they
+ * cannot be told apart by looking at the focus alone.
+ */
+function renderGrid(s, { fromStream = false } = {}) {
+  if (fromStream && teamsDraft && document.activeElement?.classList.contains("grid__name-input")) {
+    return;
+  }
+
+  const { rounds } = s.league;
+  // In TEAMS mode the header is a working copy, so a rename in progress is not
+  // overwritten by the stream — and CANCEL has something to fall back to.
+  const teams = teamsDraft ? teamsDraft.names : s.league.teams;
+  const myIndex = teamsDraft
+    ? teamsDraft.names.indexOf(teamsDraft.myTeam)
+    : s.league.myIndex;
+
   const byCell = new Map();
   for (const p of s.board.picks) byCell.set(`${p.round}:${p.teamIndex}`, p);
 
-  // Every round note lands on its own round, written across the board the way
-  // it sat in the margin of the old sheet.
-  const noteFor = new Map((s.notes || []).map((n) => [n.round, n]));
-
   let html = `<table class="grid"><thead><tr><th scope="col"></th>`;
-  html += teams
-    .map((t, i) => `<th scope="col"${i === myIndex ? ' class="is-mine"' : ""}>${esc(t)}</th>`)
-    .join("");
+  html += teams.map((t, i) => teamHeader(t, i, myIndex)).join("");
   html += `</tr></thead><tbody>`;
 
   for (let r = 1; r <= rounds; r++) {
-    const note = noteFor.get(r);
-    if (note) {
-      html += `<tr class="grid__noterow"><td colspan="${teams.length + 1}">
-        <span class="grid__note"><span class="grid__noterd seg">R${String(r).padStart(
-          2,
-          "0"
-        )}</span>${noteMarkup(note.text)}</span>
-      </td></tr>`;
-    }
-
     html += `<tr><th scope="row">${String(r).padStart(2, "0")}</th>`;
     for (let c = 0; c < teams.length; c++) {
-      const pick = byCell.get(`${r}:${c}`);
+      // Reordering in TEAMS mode moves each team's picks with them, so the
+      // preview reads a column from wherever that team currently sits.
+      const from = teamsDraft ? teamsDraft.order[c] : c;
+      const pick = byCell.get(`${r}:${from}`);
       const cls = [c === myIndex ? "is-mine" : "", pick ? "" : "is-empty"].filter(Boolean).join(" ");
       if (!pick) {
         html += `<td class="${cls}"></td>`;
@@ -698,9 +1026,17 @@ function render(payload) {
 
   // Indexes are rebuilt per payload — which is per board change, not per frame.
   byId = new Map();
+  const available = new Set();
   for (const pos of Object.keys(state.available.byPosition)) {
-    for (const p of state.available.byPosition[pos]) byId.set(p.id, p);
+    for (const p of state.available.byPosition[pos]) {
+      byId.set(p.id, p);
+      available.add(p.id);
+    }
   }
+  // Taken is the complement of available across the whole pool, which is how
+  // the server computes it — a two-way player gone at one position is gone.
+  takenIds = new Set(allPlayers.filter((p) => !available.has(p.id)).map((p) => p.id));
+
   watch = new Map();
   for (const i of state.inventory) {
     // Inventory rows win: they carry watch state and who took him.
@@ -714,9 +1050,10 @@ function render(payload) {
   renderTagbar(state);
   renderBoard(state);
   renderPlans(state);
+  renderNotes(state);
   renderTeam(state);
   renderLog(state);
-  renderGrid(state);
+  renderGrid(state, { fromStream: true });
   renderTargets(state);
   syncFocus();
 
@@ -771,6 +1108,18 @@ function flushNote() {
 
 document.addEventListener("click", async (e) => {
   if (e.target.closest("[data-focus-close]")) return closeFocus();
+
+  const take = e.target.closest("[data-draft]");
+  if (take) return draftPlayer(take.dataset.draft);
+
+  const target = e.target.closest("[data-edit-target]");
+  if (target) {
+    const [bi, ti] = target.dataset.editTarget.split(":").map(Number);
+    return editPlanTarget(target, bi, ti);
+  }
+
+  const label = e.target.closest("[data-edit-label]");
+  if (label) return editPlanLabel(label, Number(label.dataset.editLabel));
 
   const open = e.target.closest("[data-focus]");
   if (open) return openFocus(open.dataset.focus, open);
@@ -853,6 +1202,65 @@ el.exposure.addEventListener("click", () => {
 
 el.planEdit.addEventListener("click", () => openSetup());
 
+/* ---------------------------------------------------------- board controls */
+
+el.teamsEdit.addEventListener("click", openTeams);
+el.teamsCancel.addEventListener("click", closeTeams);
+el.teamsSave.addEventListener("click", saveTeams);
+
+el.boardClear.addEventListener("click", async () => {
+  const made = state?.board?.madePicks ?? 0;
+  if (!made) return echo("idle", "the board is already empty");
+  if (!confirm(`Clear all ${made} pick${made === 1 ? "" : "s"} off the board?\n\nThere is no undo for this one.`)) {
+    return;
+  }
+  try {
+    await postBoard("reset");
+    seenPicks = new Set();
+    firstPaint = true; // nothing on the fresh board should flash as "just went"
+    echo("idle", "board cleared");
+  } catch (err) {
+    echo("error", err.message);
+  }
+});
+
+/* Typing in a team name edits the working copy only. Nothing reaches disk
+   until SAVE, so a half-typed name can never become the league. */
+el.gridBody.addEventListener("input", (e) => {
+  const field = e.target.closest("[data-team]");
+  if (!field || !teamsDraft) return;
+  const i = Number(field.dataset.team);
+  // Retitling the seat James is sitting in has to move the marker with it,
+  // or SAVE would be rejected for naming a team that no longer exists.
+  if (teamsDraft.names[i] === teamsDraft.myTeam) teamsDraft.myTeam = field.value;
+  teamsDraft.names[i] = field.value;
+});
+
+el.gridBody.addEventListener("click", (e) => {
+  if (!teamsDraft) return;
+
+  const me = e.target.closest("[data-me]");
+  if (me) {
+    teamsDraft.myTeam = teamsDraft.names[Number(me.dataset.me)];
+    return renderGrid(state);
+  }
+
+  const move = e.target.closest("[data-move]");
+  if (move) {
+    const [i, step] = move.dataset.move.split(":").map(Number);
+    const to = i + step;
+    if (to < 0 || to >= teamsDraft.names.length) return;
+    for (const key of ["names", "order"]) {
+      const arr = teamsDraft[key];
+      [arr[i], arr[to]] = [arr[to], arr[i]];
+    }
+    renderGrid(state);
+    // Keep the moved column under the cursor, so a team can be walked several
+    // slots without hunting for the button again.
+    el.gridBody.querySelector(`[data-move="${to}:${step}"]`)?.focus();
+  }
+});
+
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
     if (isSetupOpen()) {
@@ -875,43 +1283,57 @@ document.addEventListener("keydown", (e) => {
   else if (k === "e") setExposure(el.body.dataset.exposure === "sun" ? "night" : "sun");
 });
 
-initSetup();
+/* The setup overlay writes the same plan file the FIELD screen edits in place.
+   Re-read on close so the two can't drift apart. */
+initSetup({ onClose: loadPlan });
+
+/* Both are fetched once, not per keystroke: the pool for the type-ahead, the
+   raw plan so plan targets can be edited where they are read. */
+loadPlayerList();
+loadPlan();
 
 /* -------------------------------------------------------------- pick entry */
-/* Mock-only, and the server enforces that independently — this control is
-   hidden when the app reads the sheet, but hiding a button is not a guarantee,
-   so /api/mock/* refuses on the server too. */
+/* Every pick in the draft comes through here or through a row's take button.
+   The server refuses writes independently in replay mode — hiding a control is
+   not a guarantee, so /api/board/* checks for itself too. */
 
 function echo(kind, text) {
   el.entryEcho.dataset.kind = kind;
   el.entryEcho.textContent = text;
 }
 
-async function postMock(action, body) {
-  const res = await fetch(`/api/mock/${action}`, {
+async function postBoard(action, body) {
+  const res = await fetch(`/api/board/${action}`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body || {}),
   });
   const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(json.error || `mock ${action} failed`);
+  if (!res.ok) throw new Error(json.error || `board ${action} failed`);
   return json;
 }
 
-el.entry.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const name = el.entryInput.value.trim();
-  if (!name) return;
-
-  el.entryInput.value = "";
+/* Record a pick at whatever slot is next. Shared by the entry box and by the
+   take button on every player row — one path, so a pick typed and a pick
+   clicked land identically and report identically. */
+async function draftPlayer(name) {
+  const text = String(name ?? "").trim();
+  if (!text) return;
   try {
-    const out = await postMock("pick", { name });
-    if (out.matched.length) {
+    const out = await postBoard("pick", { name: text });
+    if (out.already) {
+      // Recorded, but said out loud. A player entered twice burns a slot and
+      // leaves James believing someone is still available who isn't.
+      echo(
+        "miss",
+        `${out.at.label} — ${out.already.name} was ALREADY taken at ${out.already.label} by ${out.already.team}. Recorded anyway; UNDO if that was a mis-click.`
+      );
+    } else if (out.matched.length) {
       // Echo who it actually landed on rather than what was typed. "dk metcalf"
-      // resolving to DK Metcalf is the matcher working, and seeing it is how you
-      // learn to trust it before draft day.
+      // resolving to DK Metcalf is the matcher working, and seeing it is how
+      // you learn to trust it before draft day.
       const who = out.matched.map((m) => `${m.name} · ${m.pos}${m.team ? ` · ${m.team}` : ""}`).join("  +  ");
-      echo("hit", `${out.at.label} ${who}`);
+      echo("hit", `${out.at.label} ${out.at.team} — ${who}`);
     } else {
       echo(
         "miss",
@@ -921,12 +1343,28 @@ el.entry.addEventListener("submit", async (e) => {
   } catch (err) {
     echo("error", err.message);
   }
+}
+
+el.entry.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const name = el.entryInput.value.trim();
+  if (!name) return;
+  el.entryInput.value = "";
+  await draftPlayer(name);
   el.entryInput.focus();
+});
+
+/* The type-ahead offers players; the form still owns what happens on enter, so
+   a name the list never offered is submitted rather than swallowed. That
+   matters: an unmatched pick has to be recordable (rule 1). */
+attachCombobox(el.entryInput, {
+  getItems: pickCandidates,
+  onPick: () => el.entry.requestSubmit(),
 });
 
 el.entryUndo.addEventListener("click", async () => {
   try {
-    const out = await postMock("undo");
+    const out = await postBoard("undo");
     echo("idle", `took back ${out.removed.label} "${out.removed.text}"`);
   } catch (err) {
     echo("error", err.message);

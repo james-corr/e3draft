@@ -16,13 +16,11 @@ stopping at round 18, not a defect). The IDP slots were the real bug and `MY TEA
 
 Then:
 
-2. **Connect the live board** — `DRAFT BOARD` tab, link-viewable sharing, Google API key,
-   `config.json`. ~15 minutes, needs James. Steps in `README.md`. Do this well before draft day
-   so the leaguemate-types-a-name path is proven with slack.
-3. **Rewrite the 9 plans and 10 round notes** for this season, in the app's setup surface.
-   James's judgment, not a code task. The 2025 plans are carried forward as the starting point;
-   67 of their 69 targets still resolve against the 2026 pool.
-4. **Publish to GitHub** — last, on purpose. Public repo, `.xlsx` stripped from history (one
+2. **Rewrite the 9 plans and 10 round notes** for this season. James's judgment, not a code
+   task. The 2025 plans are carried forward as the starting point; 67 of their 69 targets still
+   resolve against the 2026 pool. Plan names and targets are now editable directly on the FIELD
+   screen; adding and removing rows is in the setup surface.
+3. **Publish to GitHub** — last, on purpose. Public repo, `.xlsx` stripped from history (one
    workbook has a live Sheets URL inside it). Commands in
    `plans/archive/08_18_26_setup-editor-and-github_handoff.md`. Run `ListAgents` first.
    `scoring/` is **cleared to publish** — James, 08/23/26. The four screenshots stay in the
@@ -50,12 +48,23 @@ Then:
 
 ## Shipped
 
-- **Mock drafts** (08/23/26): `"source": "mock"` turns on a pick entry strip above the bottom
-  rail — type who just went, press enter, it lands on the board through the real matcher and
-  the real engine. The REC lamp reads MOCK so a rehearsal cannot be mistaken for the real
-  draft. Unmatched names are recorded and surfaced rather than rejected, because that is what
-  the sheet does. Writes `data/board.mock.json`, never the 2025 fixture, and the server refuses
-  `/api/mock/*` whenever the app is pointed at the sheet.
+- **The app is the board** (08/24/26): the shared Google Sheet is gone — no co-edited board this
+  season, no Sheets API, no API key. James types every pick in. Everything that followed from
+  that landed together:
+  - The pick box moved under the top rail and grew a **type-ahead**: arrow keys navigate, enter
+    takes the highlighted match or the first one if you haven't moved. `public/combobox.js`.
+  - **One-click drafting** from any ON THE BOARD row, consuming whatever pick is next.
+  - A **duplicate pick is recorded and reported**, naming where that player already went.
+  - **Plans edited in place** on FIELD — click a plan's name or any target. Same matcher, same
+    `.bak`-backed save as the setup surface.
+  - **Team names, draft order, and "which seat is mine"** editable on the BOARD screen.
+    Reordering moves each team's picks with them. `POST /api/league`.
+  - **CLEAR BOARD** wipes every pick, which is also how a mock draft is now run.
+  - **Round notes** moved off the board grid into their own scrolling panel on FIELD.
+
+- **Mock drafts** (08/23/26): the in-app pick entry strip that made all of the above possible.
+  Superseded by the entry above — there is no mock mode any more, because there is no other
+  mode to distinguish it from.
 
 - **2026 season, IDP included** (08/20/26): `players.2026.json` holds 1069 players across all
   eleven positions, where it held 377 offense-only. `branches.2026.json` carried forward from
@@ -81,6 +90,6 @@ Then:
 - Draft-day interface: board grid, tier-banded available pool, plan health, my team, transactions, target locking
 - Engine: taken/available, tier counts, rosters, snake pick order, plan health — 1.75ms per recompute
 - Name matcher: 216/216 real 2025 picks matched, unmatched picks surfaced rather than dropped
-- Live plumbing: Google Sheets API read, change-detecting poll loop, SSE push
-- Board-tab generator (`tools/make-board-tab.mjs`) — the new dumb shared board
+- Live plumbing: change-detecting poll loop, SSE push (the Google Sheets read path and
+  `tools/make-board-tab.mjs` were deleted 08/24/26 along with the shared board)
 - Migration off the old workbooks (`tools/extract_from_xlsx.py`): 676 players, 9 contingency plans, 10 round notes, 2025 draft as a test fixture

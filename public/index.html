@@ -59,6 +59,29 @@
         </div>
       </header>
 
+      <!-- ========================================================= pick entry -->
+      <!-- Directly under the top rail and outside the view switcher, so it is on
+           screen on every framing. This app is the board now: every pick lands
+           here, so it sits where the eye already is rather than at the bottom
+           edge. Hidden only in replay mode, where the 2025 fixture is read-only
+           and the server refuses writes independently. -->
+      <form class="entry" id="entry" hidden autocomplete="off">
+        <span class="entry__at">
+          <span class="entry__slot seg" id="entrySlot">—</span>
+          <span class="entry__team" id="entryTeam">—</span>
+        </span>
+        <input
+          class="entry__input"
+          id="entryInput"
+          type="text"
+          placeholder="type the pick, press enter"
+          aria-label="Enter the pick that was just made"
+          spellcheck="false"
+        />
+        <p class="entry__echo" id="entryEcho" role="status" aria-live="polite"></p>
+        <button class="entry__btn" type="button" id="entryUndo">UNDO</button>
+      </form>
+
       <!-- ================================================================ scene -->
       <main class="scene" id="scene">
         <span class="bracket bracket--tl" aria-hidden="true"></span>
@@ -113,8 +136,21 @@
             <div class="panel__body" id="plansList"></div>
           </section>
 
-          <!-- MY TEAM + TRANSACTIONS --------------------------------------- -->
+          <!-- ROUND NOTES + MY TEAM + TRANSACTIONS ------------------------- -->
           <div class="stack">
+            <!-- James's own margin notes, years of them, one per round. They
+                 used to run across the board grid a round at a time, which meant
+                 reading ahead required leaving the FIELD. Here the whole run
+                 scrolls in place while the cue strip still calls the round in
+                 play. -->
+            <section class="panel panel--notes" aria-labelledby="h-notes">
+              <div class="panel__head">
+                <h2 class="panel__title seg" id="h-notes">ROUND NOTES</h2>
+                <span class="panel__meta" id="notesMeta"></span>
+              </div>
+              <div class="panel__body" id="notesList"></div>
+            </section>
+
             <section class="panel panel--team" aria-labelledby="h-team">
               <div class="panel__head">
                 <h2 class="panel__title seg" id="h-team">MY TEAM</h2>
@@ -137,7 +173,16 @@
           <section class="panel panel--grid" aria-labelledby="h-grid">
             <div class="panel__head">
               <h2 class="panel__title seg" id="h-grid">THE BOARD</h2>
-              <span class="panel__meta">20 rounds · snake</span>
+              <span class="panel__tools">
+                <span class="panel__meta" id="gridMeta">20 rounds · snake</span>
+                <!-- Who is drafting where, and which column is James. Behind an
+                     explicit mode because reordering re-cuts the snake, and
+                     that is not something to do by brushing a header cell. -->
+                <button class="ebtn" id="teamsEdit">TEAMS</button>
+                <button class="ebtn" id="teamsSave" hidden>SAVE</button>
+                <button class="ebtn" id="teamsCancel" hidden>CANCEL</button>
+                <button class="ebtn" id="boardClear">CLEAR BOARD</button>
+              </span>
             </div>
             <div class="panel__body panel__body--flush" id="gridBody"></div>
           </section>
@@ -156,29 +201,6 @@
       </main>
 
       <!-- ========================================================= bottom rail -->
-      <!-- ========================================================= pick entry -->
-      <!-- Mock-only. A camcorder has a test-record mode that writes to the tape
-           without pretending to be the take; this is that. Hidden entirely when
-           the app is reading the real sheet, where the leaguemates' typing is
-           the source of truth and nothing here should be able to write. -->
-      <form class="entry" id="entry" hidden autocomplete="off">
-        <span class="entry__tag">MOCK</span>
-        <span class="entry__at">
-          <span class="entry__slot seg" id="entrySlot">—</span>
-          <span class="entry__team" id="entryTeam">—</span>
-        </span>
-        <input
-          class="entry__input"
-          id="entryInput"
-          type="text"
-          placeholder="type the pick, press enter"
-          aria-label="Enter the pick that was just made"
-          spellcheck="false"
-        />
-        <p class="entry__echo" id="entryEcho" role="status" aria-live="polite"></p>
-        <button class="entry__btn" type="button" id="entryUndo">UNDO</button>
-      </form>
-
       <footer class="rail rail--bottom">
         <div class="rail__group">
           <span class="readout readout--stack">

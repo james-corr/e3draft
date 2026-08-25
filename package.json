@@ -2,7 +2,7 @@
   "name": "e3draft",
   "version": "1.0.0",
   "private": true,
-  "description": "Fantasy football draft command center. Reads the shared Google Sheet board live, does the taken/available/tier math locally.",
+  "description": "Fantasy football draft command center. Owns the draft board locally and does the taken/available/tier math in memory.",
   "type": "module",
   "main": "server.js",
   "scripts": {

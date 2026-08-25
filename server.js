@@ -8,7 +8,7 @@ import { loadPlayers, resolvePick } from "./lib/players.js";
 import { readBoard } from "./lib/board.js";
 import { computeState } from "./lib/state.js";
 import { createStore } from "./lib/store.js";
-import * as mock from "./lib/mock.js";
+import * as picks from "./lib/picks.js";
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
 const DATA = join(ROOT, "data");
@@ -18,22 +18,20 @@ const PORT = Number(process.env.PORT) || 4173;
 // ---------------------------------------------------------------------------
 // Config
 // ---------------------------------------------------------------------------
-const DEFAULTS = { source: "local", pollMs: 1500, tabName: "DRAFT BOARD", season: 2025 };
+const DEFAULTS = { source: "live", pollMs: 1500, season: 2025 };
 const configPath = join(ROOT, "config.json");
 const config = { ...DEFAULTS, ...(existsSync(configPath) ? JSON.parse(readFileSync(configPath, "utf8")) : {}) };
 
-if (config.source === "sheet" && (!config.sheetId || !config.apiKey)) {
-  console.error("config.json says source:'sheet' but sheetId/apiKey are missing. Falling back to local board.");
-  config.source = "local";
-}
-
 const SEASON = config.season;
 
-const league = JSON.parse(readFileSync(join(DATA, "league.json"), "utf8"));
 // `let`, not `const`: a rankings refresh swaps the whole pool in place. See
 // /api/refresh below — nothing else is allowed to reassign it.
 let pool = loadPlayers(DATA, SEASON);
 const store = createStore(DATA, SEASON);
+
+// The board is read-only in replay mode: data/board.local.json is the 2025
+// draft kept as a test fixture, and nothing may write over it.
+const CAN_WRITE_PICKS = config.source !== "local";
 
 // ---------------------------------------------------------------------------
 // Poll loop: read the board, recompute, push to browsers only when it changed.
@@ -54,7 +52,7 @@ function hashBoard(board) {
 
 async function tick() {
   try {
-    const board = await readBoard(config, league, DATA);
+    const board = await readBoard(config, store.league, DATA);
     lastError = null;
     consecutiveErrors = 0;
 
@@ -64,7 +62,7 @@ async function tick() {
     lastHash = hash;
     lastBoard = board;
 
-    current = computeState({ pool, league, board, inventory: store.inventory, plan: store.plan });
+    current = computeState({ pool, league: store.league, board, inventory: store.inventory, plan: store.plan });
     broadcast();
   } catch (err) {
     consecutiveErrors++;
@@ -80,7 +78,7 @@ async function tick() {
 /** Recompute from the board we already have — for local edits like starring. */
 function recomputeLocal() {
   if (!lastBoard) return;
-  current = computeState({ pool, league, board: lastBoard, inventory: store.inventory, plan: store.plan });
+  current = computeState({ pool, league: store.league, board: lastBoard, inventory: store.inventory, plan: store.plan });
   broadcast();
 }
 
@@ -94,12 +92,26 @@ function reloadPool() {
   return pool.players.length;
 }
 
+/**
+ * Has this name already been drafted, and by whom?
+ *
+ * Compared on the resolved player rather than the typed text, so "gibbs" typed
+ * after "Jahmyr Gibbs" is caught. Returns null when he is still on the board.
+ */
+function whoAlreadyHas(name) {
+  const { matched } = resolvePick(pool, name);
+  if (!matched.length || !current) return null;
+  const norms = new Set(matched.map((m) => m.norm));
+  const had = current.board.picks.find((p) => norms.has(p.player.norm));
+  return had ? { name: had.player.name, label: had.label, team: had.team } : null;
+}
+
 function payload() {
   return JSON.stringify({
     ok: !lastError,
     error: lastError,
     source: config.source,
-    canEnterPicks: config.source === "mock",
+    canEnterPicks: CAN_WRITE_PICKS,
     state: current,
   });
 }
@@ -244,43 +256,88 @@ const server = createServer(async (req, res) => {
     );
   }
 
-  // --- does this typed name land on a real player? -------------------------
-  // The editor asks the server rather than matching names itself, so a plan
-  // target is judged by exactly the matcher that will read it on draft day.
-  // --- the mock board's pick box -----------------------------------------
-  // Only reachable when config.source is "mock". Refusing here rather than
-  // hiding the control in the client is the part that matters: nothing should
-  // be able to write picks while the app is pointed at the real sheet, where
-  // the leaguemates' typing is the source of truth.
-  if (path.startsWith("/api/mock/") && req.method === "POST") {
-    if (config.source !== "mock") {
+  // --- the board: every pick James types ----------------------------------
+  // Refused in replay mode, where data/board.local.json is the 2025 draft kept
+  // as a fixture. Refusing on the server rather than only hiding the control is
+  // the part that matters — hiding a button is not a guarantee.
+  if (path.startsWith("/api/board/") && req.method === "POST") {
+    if (!CAN_WRITE_PICKS) {
       return sendJson(res, 409, {
-        error: `the pick box only works on a mock board. config.json has source:"${config.source}".`,
+        error: `config.json has source:"${config.source}" — that board is a read-only replay fixture.`,
       });
     }
-    const action = path.slice("/api/mock/".length);
+    const action = path.slice("/api/board/".length);
+    const league = store.league;
+    const upNext = () => picks.nextOpen(picks.loadGrid(DATA, league, SEASON), league);
     try {
       if (action === "pick") {
         const { name } = await readBody(req);
-        const out = mock.addPick(DATA, league, name, (text) => resolvePick(pool, text));
+        // Where this player already went, if he did. Recorded, never refused —
+        // rule 1 is that a pick must never fail silently, and a duplicate is
+        // reported for the same reason: a burned slot and a player James still
+        // thinks is available is the expensive failure, not the second entry.
+        const already = whoAlreadyHas(name);
+        const out = picks.addPick(DATA, league, SEASON, name, (text) => resolvePick(pool, text));
         await tick();
-        return sendJson(res, 200, { ok: true, ...out, next: mock.nextOpen(mock.loadGrid(DATA, league), league) });
+        return sendJson(res, 200, { ok: true, ...out, already, next: upNext() });
       }
       if (action === "undo") {
-        const removed = mock.undoPick(DATA, league);
+        const removed = picks.undoPick(DATA, league, SEASON);
         await tick();
-        return sendJson(res, 200, { ok: true, removed, next: mock.nextOpen(mock.loadGrid(DATA, league), league) });
+        return sendJson(res, 200, { ok: true, removed, next: upNext() });
       }
       if (action === "reset") {
-        mock.resetBoard(DATA, league);
+        picks.resetBoard(DATA, league, SEASON);
         await tick();
-        return sendJson(res, 200, { ok: true, next: mock.nextOpen(mock.loadGrid(DATA, league), league) });
+        return sendJson(res, 200, { ok: true, next: upNext() });
       }
-      return sendJson(res, 404, { error: `unknown mock action "${action}"` });
+      return sendJson(res, 404, { error: `unknown board action "${action}"` });
     } catch (err) {
       return sendJson(res, 400, { error: err.message });
     }
   }
+
+  // --- who is drafting, in what order, and which one is me ----------------
+  // Renaming is always safe. Reordering moves each team's picks with them, so
+  // a manager keeps what they drafted and only their place in the snake moves.
+  if (path === "/api/league" && req.method === "POST") {
+    try {
+      const body = await readBody(req);
+      const before = store.league.teams;
+
+      // `order` is old-index-per-new-slot. Checked BEFORE anything is written:
+      // this endpoint touches two files, and a request that ends in an error
+      // must not have left the first one changed.
+      const order = Array.isArray(body.order) ? body.order : null;
+      if (order) {
+        if (order.some((i) => !Number.isInteger(i) || i < 0 || i >= before.length)) {
+          throw new Error("order refers to a column that doesn't exist");
+        }
+        // A permutation, not just numbers in range: a duplicated index would
+        // copy one team's picks into two columns and lose another's entirely.
+        if (order.length !== before.length || new Set(order).size !== before.length) {
+          throw new Error("order must list every column exactly once");
+        }
+      }
+
+      const saved = store.saveLeague(body);
+      // In replay mode the board file is left alone — the 2025 fixture is not
+      // ours to rewrite.
+      if (CAN_WRITE_PICKS) {
+        picks.applyTeams(DATA, store.league, SEASON, saved.teams, order ?? undefined);
+      }
+
+      lastHash = null; // the grid moved under us; force a recompute
+      await tick();
+      return sendJson(res, 200, { ok: true, league: { teams: saved.teams, myTeam: saved.myTeam } });
+    } catch (err) {
+      return sendJson(res, 400, { error: err.message });
+    }
+  }
+
+  // --- does this typed name land on a real player? -------------------------
+  // The editor asks the server rather than matching names itself, so a plan
+  // target is judged by exactly the matcher that will read it on draft day.
 
   if (path === "/api/resolve" && req.method === "POST") {
     try {
@@ -348,16 +405,13 @@ async function boot() {
     console.log("  E3 Draft — command center");
     console.log(`  http://localhost:${PORT}`);
     console.log("");
-    const sourceLabel =
-      config.source === "sheet"
-        ? `Google Sheet (${config.tabName})`
-        : config.source === "mock"
-          ? `data/${mock.MOCK_FILE} — mock draft, pick box on`
-          : "data/board.local.json";
-    console.log(`  board source : ${sourceLabel}`);
+    const sourceLabel = CAN_WRITE_PICKS
+      ? `data/${picks.boardFile(SEASON)} — pick box on`
+      : "data/board.local.json — 2025 replay, read-only";
+    console.log(`  board        : ${sourceLabel}`);
     console.log(`  poll         : every ${config.pollMs}ms`);
     console.log(`  players      : ${pool.players.length}`);
-    console.log(`  you          : ${league.myTeam}`);
+    console.log(`  you          : ${store.league.myTeam}`);
     console.log("");
   });
 }

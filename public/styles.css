@@ -144,7 +144,11 @@ button {
   /* Grid items default to min-width:auto, so without an explicit minmax(0,…)
      column a wide child stretches the whole frame past the viewport. */
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: var(--rail-h) 1fr var(--rail-h);
+  /* Four rows, one per child: top rail, pick-entry strip, scene, bottom rail.
+     The entry row is `auto` so it costs nothing when hidden in replay mode —
+     and it must be declared, or the strip lands in the scene's `1fr` row and
+     pushes the whole viewfinder out of the frame. */
+  grid-template-rows: var(--rail-h) auto 1fr var(--rail-h);
   height: 100vh;
   height: 100dvh;
 }
@@ -414,9 +418,11 @@ button {
   min-height: 0;
 }
 
+/* Round notes on top — they are read ahead of the pick, so they sit above the
+   two panels that report what already happened. Each scrolls in its own box. */
 .stack {
   display: grid;
-  grid-template-rows: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  grid-template-rows: minmax(0, 0.85fr) minmax(0, 0.85fr) minmax(0, 1.05fr);
   gap: var(--gap);
   min-height: 0;
 }
@@ -703,6 +709,32 @@ button {
   height: 15px;
 }
 
+/* Take — mark this player drafted, consuming the next pick on the board. The
+   record mark, because that is literally what it does: commits him to the tape.
+   Sits at rest like the lock does and comes up on hover, so 70 rows of board do
+   not read as 70 buttons. */
+.take {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  color: var(--ink-dim);
+  opacity: 0.4;
+  transition: opacity 0.15s, color 0.15s;
+}
+
+.prow:hover .take,
+.take:focus-visible {
+  opacity: 1;
+  color: var(--ink);
+}
+
+.take .ico {
+  width: 15px;
+  height: 15px;
+}
+
 /* --------------------------------------------------------- tier banding */
 
 .tier {
@@ -798,6 +830,9 @@ button {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-align: left;
+  min-width: 0;
+  flex: 1;
 }
 
 .plan__health {
@@ -867,6 +902,42 @@ button {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-align: left;
+  min-width: 0;
+}
+
+/* ---------------------------------------------------- editing a plan in place */
+/* The plans are edited where they are read. The affordance is a dotted rule
+   under the text — present at rest so the field is discoverable without hover,
+   which a mouse-only reveal would not be, and quiet enough that nine plans do
+   not read as a form. */
+
+.plan__name,
+.ptarget__name {
+  border-bottom: 1px dotted var(--hud);
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.plan__name:hover,
+.ptarget__name:hover,
+.plan__name:focus-visible,
+.ptarget__name:focus-visible {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+}
+
+/* The live field. Solid ink underline, not amber: renaming a plan is not a
+   caution, it is just the thing you are currently doing. */
+.plan__name--editing,
+.ptarget__name--editing {
+  width: 100%;
+  background: var(--scene);
+  border: 0;
+  border-bottom: 1px solid var(--ink);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  padding: 1px 3px;
+  outline: none;
 }
 
 .ptarget__at {
@@ -1105,6 +1176,92 @@ button {
   background: var(--scene-sunk);
 }
 
+/* James's own column already carries the amber inset rule down the board; the
+   word says the same thing again in the header, because a seat identified only
+   by colour is a seat that can be misread in sun. */
+.grid__me {
+  margin-left: 6px;
+  font-family: var(--font-seg);
+  font-size: 11px;
+  letter-spacing: 0;
+  color: var(--caution);
+}
+
+/* ------------------------------------------------------------ TEAMS mode */
+/* Renaming, reordering and claiming a seat. A distinct mode rather than
+   always-on fields: reordering re-cuts the snake, which is not a thing to do
+   by brushing a header cell mid-draft. */
+
+.grid__edit {
+  padding: 4px;
+  min-width: 108px;
+}
+
+.grid__move {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 3px;
+}
+
+.movebtn,
+.mebtn {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  padding: 3px 5px;
+  color: var(--ink-dim);
+  border: 1px solid var(--hud);
+  transition: color 0.15s, border-color 0.15s, background-color 0.15s;
+}
+
+.movebtn:hover:not(:disabled),
+.mebtn:hover {
+  color: var(--ink);
+  border-color: var(--ink-dim);
+}
+
+.movebtn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* Pressed inverts to solid ink. Amber is caution in this world and "this seat
+   is mine" is a fact, not a warning — the board's own amber column rule is
+   what marks it once TEAMS mode closes. */
+.mebtn {
+  display: block;
+  width: 100%;
+  margin-top: 3px;
+  text-align: center;
+}
+
+.mebtn[aria-pressed="true"] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--scene-panel);
+}
+
+.grid__name-input {
+  width: 100%;
+  min-width: 0;
+  background: var(--scene);
+  border: 1px solid var(--hud);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 3px 4px;
+}
+
+.grid__name-input:focus {
+  outline: none;
+  border-color: var(--ink);
+}
+
 /* ---------------------------------------------------------- zebra alert */
 
 /* `display` beats the hidden attribute, so restate it or the empty banner shows. */
@@ -1197,29 +1354,65 @@ button {
   color: var(--ink-dim);
 }
 
-/* The same note written across its own round on the board. */
-.grid__noterow td {
-  background: var(--scene-sunk);
-  padding: 3px 6px;
+/* ------------------------------------------------------- round notes panel */
+/* The whole run of notes, scrolling in place on the FIELD screen. The cue strip
+   above still calls the round in play; this is what is coming. Rounds already
+   drafted stay legible rather than disappearing — "the kicker run was supposed
+   to start two rounds ago" is a real thing to want to check. */
+
+.rnote {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 8px;
+  padding: 6px 7px;
+  border-bottom: 1px solid var(--hud-soft);
 }
 
-.grid__note {
-  position: sticky;
-  left: 6px;
-  display: inline-block;
+.rnote:last-child {
+  border-bottom: 0;
+}
+
+.rnote__rd {
   font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  font-weight: 700;
+  color: var(--ink-dim);
+  padding-top: 1px;
+}
+
+.rnote__text {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
   color: var(--ink-dim);
 }
 
-.grid__noterd {
-  margin-right: 8px;
+/* The round in play. Not amber — amber is act-now, and a note is advisory by
+   definition. It steps up to solid ink and takes a rule on the leading edge,
+   the same way the cue strip marks the round it is speaking about. */
+.rnote[data-state="now"] {
+  background: var(--scene-sunk);
+  box-shadow: inset 2px 0 0 var(--ink);
+}
+
+.rnote[data-state="now"] .rnote__rd,
+.rnote[data-state="now"] .rnote__text {
   color: var(--ink);
 }
 
-.grid__note .cue__hot {
+/* Behind us. Dropped back, and struck on the round number so the state is not
+   carried by dimming alone. */
+.rnote[data-state="past"] {
+  opacity: 0.55;
+}
+
+.rnote[data-state="past"] .rnote__rd {
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.rnote .cue__hot {
   color: var(--ink);
+  font-weight: 700;
 }
 
 /* --------------------------------------------------------------- zoom bar */
@@ -1854,7 +2047,7 @@ button {
   /* Rails wrap on a narrow screen, so their rows must size to content —
      a fixed row height clips them instead. */
   .vf {
-    grid-template-rows: auto 1fr auto;
+    grid-template-rows: auto auto 1fr auto;
     height: auto;
     min-height: 100dvh;
   }
@@ -1889,7 +2082,7 @@ button {
 
   .stack {
     display: grid;
-    grid-template-rows: auto auto;
+    grid-template-rows: auto auto auto;
   }
 
   .scene {
@@ -2008,16 +2201,6 @@ button {
   overflow-x: hidden;
 }
 
-.entry__tag {
-  font-family: var(--font-ui);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  padding: 3px 7px;
-  color: var(--rail);
-  background: var(--rail-ink);
-  flex: none;
-}
 
 .entry__at {
   display: inline-flex;
@@ -2142,4 +2325,99 @@ button {
   .entry__echo {
     flex-basis: 100%;
   }
+}
+
+/* ------------------------------------------------------------- type-ahead */
+/* The name field's candidate list, for the pick box and for plan targets.
+   Body-anchored rather than nested, because the rails and the panels both clip
+   their overflow and a popover inside either gets cut off at the box edge.
+
+   The world has no shadow token — depth is not how this interface separates
+   layers. It occludes the way the focus card does: an opaque panel with the
+   HUD rule around it, sitting flat on top of the scene. */
+
+.cbx {
+  position: fixed;
+  z-index: 40;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 292px;
+  overflow-y: auto;
+  background: var(--scene-panel);
+  border: 1px solid var(--ink);
+  scrollbar-width: thin;
+  scrollbar-color: var(--hud) transparent;
+}
+
+.cbx[hidden] {
+  display: none;
+}
+
+.cbx__row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 5px 8px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--hud-soft);
+}
+
+.cbx__row:last-child {
+  border-bottom: 0;
+}
+
+/* The highlighted row inverts to solid ink. Not amber: amber is caution in this
+   world — scarcity, on the clock — and moving down a list is neither. */
+.cbx__row[aria-selected="true"],
+.cbx__row:hover {
+  background: var(--ink);
+  color: var(--scene-panel);
+}
+
+.cbx__name {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cbx__meta {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  white-space: nowrap;
+}
+
+.cbx__row[aria-selected="true"] .cbx__meta,
+.cbx__row:hover .cbx__meta {
+  color: var(--scene-panel);
+}
+
+/* Already on the board. Struck as well as dimmed, because a player being gone
+   is exactly the kind of thing that must not be carried by colour alone. */
+.cbx__row[data-taken="true"] .cbx__name {
+  color: var(--ink-dim);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.cbx__gone {
+  font-family: var(--font-seg);
+  font-size: 11px;
+  color: var(--alarm);
+}
+
+/* An inverted row wins over the taken treatment — the strike-through still says
+   "gone", but the ink has to flip or it goes unreadable against the fill. */
+.cbx__row[aria-selected="true"][data-taken="true"] .cbx__name,
+.cbx__row:hover[data-taken="true"] .cbx__name,
+.cbx__row[aria-selected="true"] .cbx__gone,
+.cbx__row:hover .cbx__gone {
+  color: var(--scene-panel);
 }
