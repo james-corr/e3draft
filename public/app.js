@@ -27,6 +27,8 @@ const el = {
   posbar: $("posbar"),
   tagbar: $("tagbar"),
   boardList: $("boardList"),
+  vsList: $("vsList"),
+  vsMeta: $("vsMeta"),
   plansList: $("plansList"),
   plansMeta: $("plansMeta"),
   teamBody: $("teamBody"),
@@ -97,6 +99,21 @@ function tagMarks(id, tags = []) {
         aria-label="${on ? "Remove" : "Add"} tag ${esc(t)}">${esc(marks[t] || t.slice(0, 1))}</button>`;
     })
     .join("")}</span>`;
+}
+
+/* The VS mark — same one-click toggle language as a tag, dropped into up to
+   four slots in the VS panel instead of the inventory. Full at four, it
+   disables rather than bumping the oldest pick out from under you: silently
+   swapping a comparison you set up on purpose is worse than making him remove
+   one first. */
+function vsMark(id) {
+  if (!id) return "";
+  const on = vsSet.has(id);
+  const full = !on && vsSet.size >= VS_MAX;
+  return `<button class="vsmark" data-vs="${esc(id)}" aria-pressed="${on}"
+    ${full ? "disabled" : ""}
+    title="${full ? "VS is full — remove one first" : "Compare"}"
+    aria-label="${on ? "Remove from" : "Add to"} VS compare">VS</button>`;
 }
 
 /* Which tier a player is banded by. The Fantasy Footballers tier is the source
@@ -196,6 +213,7 @@ function playerRow(
     <span class="prow__figs">
       ${figs}
       ${tagMarks(p.id, tags)}
+      ${vsMark(p.id)}
       <button class="lock" data-star="${esc(p.id)}" aria-pressed="${Boolean(starred)}"
         aria-label="${starred ? "Unlock" : "Lock"} ${esc(p.name)} as a target">${
           starred ? ICON.locked : ICON.lock
@@ -227,6 +245,13 @@ let activePos = "ALL";
 let activeTag = null;
 let seenPicks = new Set();
 let firstPaint = true;
+
+/* Up to four players held for an on-the-fly side-by-side look in the VS panel.
+   Scratch state, not the watchlist — nothing here is written to disk, and it
+   starts empty again on reload. Insertion order is the column order, which is
+   exactly what a Set already keeps. */
+const VS_MAX = 4;
+let vsSet = new Set();
 
 /* Rebuilt once per payload, not once per frame: every player the client knows
    about, keyed by id, so the focus card can be opened from any row. Inventory
@@ -708,6 +733,7 @@ function renderPlans(s) {
               <button class="ptarget__name" data-edit-target="${b.index}:${t.index}"
                 title="Change this target">${esc(t.name)}</button>
               ${t.id ? tagMarks(t.id, tags) : `<span class="tagmarks"></span>`}
+              ${t.id ? vsMark(t.id) : ""}
               <span class="ptarget__at">${right}</span>
             </div>`;
           })
@@ -725,6 +751,93 @@ function renderPlans(s) {
         </article>`;
       })
       .join("") || `<p class="empty">No plans yet.</p>`;
+}
+
+/* ---------------------------------------------------------------------- VS */
+
+/* Compares whoever is in vsSet, live: no snapshot is taken when a player is
+   added, so a lock, a tag, or a pick landing on one of the four repaints the
+   panel like everywhere else in the app. STATS and focusStatus are the same
+   ones the focus card uses, so a stat added there shows up here too. */
+function renderVs() {
+  const ids = [...vsSet];
+  // byId only carries the available pool plus whoever is starred, tagged or
+  // noted — a player added to VS straight off ON THE BOARD who is none of
+  // those drops out of it the moment he is drafted. allPlayers is the whole
+  // 1069-deep pool and never shrinks, so it is the fallback rather than the
+  // panel silently losing him right when "he just went" is the thing worth
+  // seeing.
+  const players = ids
+    .map((id) => byId.get(id) || allPlayers.find((p) => p.id === id))
+    .filter(Boolean);
+  // Only an id that resolves nowhere at all — never a real player — is
+  // actually stale and worth dropping.
+  if (players.length !== ids.length) {
+    const found = new Set(players.map((p) => p.id));
+    for (const id of ids) if (!found.has(id)) vsSet.delete(id);
+  }
+
+  el.vsMeta.textContent = players.length ? `${players.length} OF ${VS_MAX}` : "";
+
+  if (!players.length) {
+    el.vsList.innerHTML = `<p class="empty">Tap VS next to up to four names on ON THE BOARD or PLANS to compare them here.</p>`;
+    return;
+  }
+
+  // Same "drop the row if nobody has it" rule the focus card follows — an IDP
+  // wall of em-dashes across every column says nothing.
+  const rows = STATS.filter(([, get]) =>
+    players.some((p) => {
+      const v = get(p);
+      return v != null && v !== "" && v !== "-";
+    })
+  );
+
+  const head = players
+    .map(
+      (p) => `<div class="vscol__head">
+        <button class="vscol__remove" data-vs="${esc(p.id)}" title="Remove"
+          aria-label="Remove ${esc(p.name)} from compare">×</button>
+        <span class="vscol__name">${esc(p.name)}</span>
+        <span class="vscol__sub">${esc(p.pos)} · ${esc(p.team ?? "—")}</span>
+        ${focusStatus(p)}
+      </div>`
+    )
+    .join("");
+
+  const body = rows
+    .map(([k, get]) => {
+      const cells = players
+        .map((p) => {
+          const v = get(p);
+          const shown = v == null || v === "" || v === "-" ? "—" : v;
+          return `<span class="vscell${seg(shown)}">${esc(shown)}</span>`;
+        })
+        .join("");
+      return `<div class="vsrow"><span class="vsrow__k">${esc(k)}</span>${cells}</div>`;
+    })
+    .join("");
+
+  el.vsList.innerHTML = `<div class="vsgrid" style="--vs-n:${players.length}">
+    <div class="vsrow vsrow--head"><span class="vscell vscell--corner"></span>${head}</div>
+    ${body}
+  </div>`;
+}
+
+/* One handler for the mark on ON THE BOARD, on PLANS, and the × in the panel
+   itself — all three name their player in data-vs. Blocks rather than bumping
+   the oldest pick at four: see the note on vsMark. */
+function toggleVs(id) {
+  if (!id) return;
+  if (vsSet.has(id)) vsSet.delete(id);
+  else if (vsSet.size < VS_MAX) vsSet.add(id);
+  else return;
+  renderVs();
+  if (state) {
+    renderBoard(state);
+    renderPlans(state);
+    renderTargets(state);
+  }
 }
 
 /* ------------------------------------------------------- editing the plans */
@@ -1621,6 +1734,7 @@ function render(payload) {
   renderPosbar(state);
   renderTagbar(state);
   renderBoard(state);
+  renderVs();
   renderPlans(state);
   renderNotes(state);
   renderTeam(state);
@@ -1724,6 +1838,9 @@ document.addEventListener("click", async (e) => {
     }
     return;
   }
+
+  const vs = e.target.closest("[data-vs]");
+  if (vs) return toggleVs(vs.dataset.vs);
 
   // One handler for every tag control in the app. The row marks, the plan marks
   // and the focus card all name their player in `data-tagfor`, so none of them

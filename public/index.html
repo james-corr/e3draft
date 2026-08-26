@@ -119,25 +119,39 @@
             <div class="panel__body" id="boardList"></div>
           </section>
 
-          <!-- PLANS -------------------------------------------------------- -->
-          <section class="panel panel--plans" aria-labelledby="h-plans">
-            <div class="panel__head">
-              <h2 class="panel__title seg" id="h-plans">PLANS</h2>
-              <span class="panel__tools">
-                <span class="panel__meta" id="plansMeta"></span>
-                <button class="iconbtn" id="planEdit" aria-label="Open setup to edit plans and notes">
-                  <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square">
-                    <path d="M2 4h12M2 8h12M2 12h12" />
-                    <path d="M6 2.5v3M10.5 6.5v3M4.5 10.5v3" />
-                  </svg>
-                </button>
-              </span>
-            </div>
-            <div class="panel__body" id="plansList"></div>
-          </section>
+          <!-- VS + PLANS ----------------------------------------------------- -->
+          <div class="stack stack--plans">
+            <!-- Up to four players, held here on the fly for a side-by-side
+                 look. Not written to disk — a scratch pad, not a watchlist —
+                 so it clears on reload. Toggled from the VS mark beside the
+                 lock icon on ON THE BOARD and beside the tag marks on PLANS. -->
+            <section class="panel panel--vs" aria-labelledby="h-vs">
+              <div class="panel__head">
+                <h2 class="panel__title seg" id="h-vs">VS</h2>
+                <span class="panel__meta" id="vsMeta"></span>
+              </div>
+              <div class="panel__body" id="vsList"></div>
+            </section>
+
+            <section class="panel panel--plans" aria-labelledby="h-plans">
+              <div class="panel__head">
+                <h2 class="panel__title seg" id="h-plans">PLANS</h2>
+                <span class="panel__tools">
+                  <span class="panel__meta" id="plansMeta"></span>
+                  <button class="iconbtn" id="planEdit" aria-label="Open setup to edit plans and notes">
+                    <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square">
+                      <path d="M2 4h12M2 8h12M2 12h12" />
+                      <path d="M6 2.5v3M10.5 6.5v3M4.5 10.5v3" />
+                    </svg>
+                  </button>
+                </span>
+              </div>
+              <div class="panel__body" id="plansList"></div>
+            </section>
+          </div>
 
           <!-- ROUND NOTES + MY TEAM + TRANSACTIONS ------------------------- -->
-          <div class="stack">
+          <div class="stack stack--aside">
             <!-- James's own margin notes, years of them, one per round. They
                  used to run across the board grid a round at a time, which meant
                  reading ahead required leaving the FIELD. Here the whole run
