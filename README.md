@@ -48,6 +48,13 @@ your list.
   unmatched pick means a drafted player is still showing as available.
 - **Tier bands** — each position's best remaining tier shows how many are left. When it drops to
   three or fewer it goes amber with zebra stripes. That's the cliff.
+- **Which tier** — bands come from the Fantasy Footballers tier, falling back to the FantasyPros
+  tier for anyone the UDK doesn't rank: every IDP, every kicker and defence, and the deep offence
+  past roughly the top 172. The two scales differ — FFB tiers restart at 1 for each position,
+  FantasyPros tiers run overall within a list — so in ALL a band reads "everyone who is his
+  position's tier N", and a band deep in a position view can hold both scales at once. Each row
+  prints the tier its band isn't showing (`FP` on the board, `FFB` and `FP` in TARGET), so a
+  disagreement between the two sources is visible without opening the focus card.
 - **PLANS** — your contingency branches. The meter is how much of that plan is still on the
   board, so you can see at a glance which strategy the draft has left intact. Struck-through
   names show the round.pick where they actually went.

@@ -53,6 +53,12 @@ knows. Its live truth comes from the league's real shared board, not from a rank
   Fantasy Footballers UDK directly (`tools/ingest/`). This reverses the earlier "scraping is out
   of scope" decision, which had made a manual hour-long chore of the one thing that has to be
   current on draft day. The FantasyPros side is not automated yet.
+- FantasyPros is the base *list* and the sort order; the Fantasy Footballers tier is the *tier*
+  James drafts off. **Changed 08/25/26** — ON THE BOARD banded by FantasyPros tier until then,
+  with the FFB tier printed on the row as a secondary figure. It now bands by FFB tier and falls
+  back to FantasyPros only where FFB has none. The known cost, accepted deliberately: the two
+  sources scale tiers differently, so a single band can hold both and its "N left" count mixes
+  them. The alternative — FFB in position views only — was considered and turned down.
 
 ## Capabilities and Constraints
 
