@@ -112,7 +112,11 @@ body {
   font-size: 15px;
   line-height: 1.35;
   -webkit-font-smoothing: antialiased;
-  overflow: hidden;
+  /* The FIELD scene now runs taller than one screen on purpose (see
+     .view--field's min-height) — the page scrolls for the overflow instead of
+     every panel needing its own inner scrollbar. */
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 button {
@@ -145,12 +149,14 @@ button {
      column a wide child stretches the whole frame past the viewport. */
   grid-template-columns: minmax(0, 1fr);
   /* Four rows, one per child: top rail, pick-entry strip, scene, bottom rail.
-     The entry row is `auto` so it costs nothing when hidden in replay mode —
-     and it must be declared, or the strip lands in the scene's `1fr` row and
-     pushes the whole viewfinder out of the frame. */
-  grid-template-rows: var(--rail-h) auto 1fr var(--rail-h);
-  height: 100vh;
-  height: 100dvh;
+     The entry row is `auto` so it costs nothing when hidden in replay mode.
+     The scene row is `auto` too now rather than `1fr` — it sizes to the
+     scene's own (deliberately taller) content instead of being clamped to
+     whatever the viewport has left, which is what lets the page grow past one
+     screen and scroll instead of squeezing every panel down to fit. */
+  grid-template-rows: var(--rail-h) auto auto var(--rail-h);
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .rail {
@@ -346,7 +352,7 @@ button {
 .scene {
   position: relative;
   /* A column, so the warning and cue strips push the framing down instead of
-     overflowing it into `overflow: hidden`. */
+     overflowing it. */
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -355,7 +361,9 @@ button {
   background-image: radial-gradient(var(--hud-soft) 1px, transparent 1px);
   background-size: 22px 22px;
   padding: 16px;
-  overflow: hidden;
+  /* Visible, not hidden — the field now runs taller than the viewport on
+     purpose, and the page (body) is what scrolls for it, not this box. */
+  overflow: visible;
   transition: background-color 0.35s var(--ease-out);
 }
 
@@ -404,8 +412,11 @@ button {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(0, 1.15fr) minmax(0, 1fr);
   gap: var(--gap);
-  flex: 1;
-  min-height: 0;
+  /* A fixed floor rather than "fill whatever the viewport leaves" — the whole
+     point is to show more of ON THE BOARD, PLANS and TRANSACTIONS than one
+     screen has room for, and let the page scroll for the rest instead of
+     every panel carrying its own inner scrollbar. */
+  min-height: 1100px;
 }
 
 /* Single-panel framings fill the scene. A panel floating above bare grid reads
@@ -419,12 +430,24 @@ button {
 }
 
 /* Round notes on top — they are read ahead of the pick, so they sit above the
-   two panels that report what already happened. Each scrolls in its own box. */
+   two panels that report what already happened. Each still has its own inner
+   scrollbar as a fallback once a box outgrows even its bigger new share of the
+   page, but the page-level scroll (see body/.vf/.scene) is what most content
+   now reaches for. MY TEAM and TRANSACTIONS both carry more weight than ROUND
+   NOTES — a made roster and a growing pick log are read more often mid-draft
+   than the note for a round not yet in play. */
 .stack {
   display: grid;
-  grid-template-rows: minmax(0, 0.85fr) minmax(0, 0.85fr) minmax(0, 1.05fr);
+  grid-template-rows: minmax(0, 0.7fr) minmax(0, 1.05fr) minmax(0, 1.2fr);
   gap: var(--gap);
   min-height: 0;
+}
+
+/* VS above PLANS, same stacking idea as the column beside it. VS is a
+   glance-sized comparison, not a scrolling list, so it takes a much smaller
+   share and PLANS keeps the room it already had. */
+.stack--plans {
+  grid-template-rows: minmax(0, 0.4fr) minmax(0, 1fr);
 }
 
 /* ------------------------------------------------------------------ panel */
@@ -734,6 +757,49 @@ button {
   border-color: var(--ink);
 }
 
+/* The VS mark — same one-click, fill-not-colour language as a tag mark, just
+   two characters wide instead of one. Lives right beside the lock on ON THE
+   BOARD and right beside the tag marks on PLANS, since PLANS has no lock. */
+.vsmark {
+  width: 24px;
+  height: 17px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--ink-dim);
+  border: 1px solid var(--hud);
+  opacity: 0.4;
+  transition: opacity 0.15s, color 0.15s, background-color 0.15s, border-color 0.15s;
+}
+
+.prow:hover .vsmark,
+.ptarget:hover .vsmark,
+.vsmark:focus-visible {
+  opacity: 1;
+}
+
+.vsmark:hover:not(:disabled) {
+  color: var(--ink);
+  border-color: var(--ink-dim);
+}
+
+.vsmark[aria-pressed="true"] {
+  opacity: 1;
+  background: var(--ink);
+  color: var(--scene-panel);
+  border-color: var(--ink);
+}
+
+/* Full at four: dim rather than hide, so it is still readable as "this is the
+   compare mark," just not one you can press right now. */
+.vsmark:disabled {
+  opacity: 0.2;
+  cursor: default;
+}
+
 /* The focus card spells the tag out and keeps the letter in front of it, so the
    marks on the rows have somewhere to be learned. */
 .tagbtn__mark {
@@ -946,10 +1012,10 @@ button {
 
 .ptarget {
   display: grid;
-  /* Round · name · tag marks · status. The marks column is fixed rather than
-     auto so a reminder row with nothing to tag still lines its status up with
-     the rows above and below it. */
-  grid-template-columns: 28px 1fr 95px auto;
+  /* Round · name · tag marks · VS · status. The marks and VS columns are fixed
+     rather than auto so a reminder row with nothing to tag or compare still
+     lines its status up with the rows above and below it. */
+  grid-template-columns: 28px 1fr 95px 26px auto;
   align-items: center;
   gap: 8px;
   padding: 3px 9px;
@@ -1047,6 +1113,105 @@ button {
   font-weight: 600;
   letter-spacing: 0.1em;
   color: var(--ink-dim);
+}
+
+/* --------------------------------------------------------------- VS panel */
+
+/* Up to four players, one column each, stat rows running down. `.vsrow` is
+   `display: contents` so its own children (the label plus one cell per
+   player) become direct children of `.vsgrid` and line up under the header
+   with no per-row column math — the same number of columns either way,
+   driven by --vs-n from the inline style JS sets per render. */
+.vsgrid {
+  display: grid;
+  grid-template-columns: auto repeat(var(--vs-n), minmax(0, 1fr));
+  font-variant-numeric: tabular-nums;
+}
+
+.vsrow {
+  display: contents;
+}
+
+.vscell,
+.vsrow__k,
+.vscol__head {
+  padding: 5px 6px;
+  border-bottom: 1px solid var(--hud-soft);
+  min-width: 0;
+}
+
+.vsrow__k {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  white-space: nowrap;
+}
+
+.vscell {
+  font-size: 13px;
+  text-align: center;
+}
+
+.vscell--corner {
+  border-bottom: 1px solid var(--hud);
+}
+
+.vsrow:hover .vscell {
+  background: var(--scene-sunk);
+}
+
+.vscol__head {
+  position: relative;
+  border-bottom: 1px solid var(--hud);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.vscol__name {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 14px;
+}
+
+.vscol__sub {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.vscol__head .focus__status {
+  align-self: flex-start;
+  white-space: normal;
+  font-size: 11px;
+  padding: 2px 5px;
+  margin-top: 1px;
+}
+
+.vscol__remove {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--ink-dim);
+}
+
+.vscol__remove:hover,
+.vscol__remove:focus-visible {
+  color: var(--ink);
 }
 
 /* ---------------------------------------------------------- my team grid */
@@ -2452,7 +2617,12 @@ button {
   [data-view="field"] .view--field {
     grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
   }
-  .stack {
+  /* Drops the aside column (notes/team/log) only — VS+PLANS now share the
+     `.stack` class too, and PLANS still has to fit in the two columns left.
+     Named rather than `:not(.stack--plans)`, which would out-specificity the
+     820px rule below that puts the aside stack back for the single-column
+     mobile layout. */
+  .stack--aside {
     display: none;
   }
 }
