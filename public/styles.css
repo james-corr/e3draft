@@ -148,15 +148,30 @@ button {
   /* Grid items default to min-width:auto, so without an explicit minmax(0,…)
      column a wide child stretches the whole frame past the viewport. */
   grid-template-columns: minmax(0, 1fr);
-  /* Four rows, one per child: top rail, pick-entry strip, scene, bottom rail.
-     The entry row is `auto` so it costs nothing when hidden in replay mode.
-     The scene row is `auto` too now rather than `1fr` — it sizes to the
+  /* Three rows: the pinned header (top rail + pick entry, one block), the
+     scene, and the bottom rail. The scene row is `auto` — it sizes to the
      scene's own (deliberately taller) content instead of being clamped to
      whatever the viewport has left, which is what lets the page grow past one
      screen and scroll instead of squeezing every panel down to fit. */
-  grid-template-rows: var(--rail-h) auto auto var(--rail-h);
+  grid-template-rows: auto auto var(--rail-h);
   min-height: 100vh;
   min-height: 100dvh;
+}
+
+/* Top rail + pick entry, stuck to the top of the page as one unit. A wrapper
+   rather than two independently-sticky elements: the top rail is a fixed
+   --rail-h on a wide screen but wraps to a taller, content-sized block on a
+   narrow one (see the 820px rail rules below), so a hardcoded `top` offset
+   for the entry row underneath it would drift out of sync at that breakpoint.
+   Stacking both under one sticky box sidesteps that — it sticks as whatever
+   height it actually is, at either width. */
+.vf__pinned {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  background: var(--rail);
 }
 
 .rail {
@@ -2768,7 +2783,7 @@ button {
   /* Rails wrap on a narrow screen, so their rows must size to content —
      a fixed row height clips them instead. */
   .vf {
-    grid-template-rows: auto auto 1fr auto;
+    grid-template-rows: auto 1fr auto;
     height: auto;
     min-height: 100dvh;
   }

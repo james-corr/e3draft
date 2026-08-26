@@ -31,6 +31,13 @@
     -->
 
     <div class="vf">
+      <!-- ==================================================== pinned header -->
+      <!-- Top rail + pick entry, frozen to the top of the page together as one
+           block. The scene now scrolls the whole page rather than clipping to
+           one screen (see .view--field's height), so the framing switch and
+           the pick box — the two things every view needs on screen at all
+           times — stay put instead of scrolling away with the board. -->
+      <div class="vf__pinned">
       <!-- ============================================================ top rail -->
       <header class="rail rail--top">
         <div class="rail__group">
@@ -103,6 +110,7 @@
         <p class="entry__echo" id="entryEcho" role="status" aria-live="polite"></p>
         <button class="entry__btn" type="button" id="entryUndo">UNDO</button>
       </form>
+      </div>
 
       <!-- ================================================================ scene -->
       <main class="scene" id="scene">
