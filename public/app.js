@@ -1348,6 +1348,84 @@ async function commitCell(name, keeper) {
 
 /* ------------------------------------------------------------- target view */
 
+/* Rows that only exist for some players — IDP have no Fantasy Footballers
+   numbers at all, and printing a wall of em-dashes would say nothing. Shared
+   by the focus card and the TARGET table below, so a stat added to one shows
+   up in the other with no second list to keep in sync. */
+const STATS = [
+  ["PROS RK", (p) => p.pros_rank],
+  ["PROS TIER", (p) => p.pros_tier],
+  ["POS RK", (p) => p.pos_rank_pros],
+  ["BYE", (p) => p.bye],
+  ["FFB TIER", (p) => p.ffb_tier],
+  ["FFB ADP", (p) => (typeof p.ffb_adp === "number" ? p.ffb_adp.toFixed(2) : null)],
+  ["FFB POS", (p) => p.ffb_pos_rank],
+  ["RISK", (p) => p.ffb_risk],
+  ["UPSIDE", (p) => p.ffb_upside],
+  ["ECR±ADP", (p) => (typeof p.ecr_vs_adp === "number" ? p.ecr_vs_adp : null)],
+];
+
+/* TARGET is a short list — locked and tagged players, not the 676-deep pool —
+   so it earns a real table: every card stat as its own column, one player per
+   row, instead of the compact card-style rows ON THE BOARD and PLANS use.
+   NAME/POS/TEAM lead because they identify the row; TAGS and the lock/take
+   actions trail because those are reached for, not read. One grid template
+   drives the header and every row via `display: contents` on each `.ttable__row`,
+   so columns stay pixel-aligned without a real `<table>` — the same div-grid
+   approach every other row component in this app already uses. */
+const TARGET_COLS =
+  "minmax(150px, 1.4fr) 44px 50px 62px 66px 60px 46px 62px 62px 62px 56px 62px 66px minmax(90px, auto) 58px";
+
+function targetHead() {
+  const labels = ["NAME", "POS", "TEAM", ...STATS.map(([k]) => k), "TAGS", ""];
+  return `<div class="ttable__row ttable__row--head">${labels
+    .map((l) => `<span class="ttable__h">${l ? esc(l) : ""}</span>`)
+    .join("")}</div>`;
+}
+
+function targetRow(p, { starred, tags = [], note = "", taken = false, wentAt = null, wentTo = null }) {
+  const gone = taken ? `${wentAt ?? ""}${wentTo ? ` · ${wentTo}` : ""}`.trim() : "";
+  const statCells = STATS.map(([, get]) => {
+    const v = get(p);
+    return v == null || v === "" || v === "-"
+      ? `<span class="ttable__c ttable__c--empty">—</span>`
+      : `<span class="ttable__c${seg(v)}">${esc(v)}</span>`;
+  }).join("");
+
+  return `<div class="ttable__row${taken ? " ttable__row--taken" : ""}">
+    <span class="ttable__c ttable__name">
+      <button class="ttable__namebtn" data-focus="${esc(p.id)}">${esc(p.name)}</button>
+      ${note ? `<span class="ttable__note">${esc(note)}</span>` : ""}
+      ${gone ? `<span class="ttable__gone">GONE ${esc(gone)}</span>` : ""}
+    </span>
+    <span class="ttable__c">${esc(p.pos)}</span>
+    <span class="ttable__c">${esc(p.team ?? "—")}</span>
+    ${statCells}
+    <span class="ttable__c">${tagMarks(p.id, tags)}</span>
+    <span class="ttable__c ttable__actions">
+      <button class="lock" data-star="${esc(p.id)}" aria-pressed="${Boolean(starred)}"
+        aria-label="${starred ? "Unlock" : "Lock"} ${esc(p.name)} as a target">${
+          starred ? ICON.locked : ICON.lock
+        }</button>
+      ${
+        taken
+          ? ""
+          : `<button class="take" data-draft="${esc(p.name)}"
+              aria-label="Mark ${esc(p.name)} drafted${nextSlotLabel()}">${ICON.rec}</button>`
+      }
+    </span>
+  </div>`;
+}
+
+function targetTable(list) {
+  return `<div class="ttable-wrap">
+    <div class="ttable" style="grid-template-columns: ${TARGET_COLS}">
+      ${targetHead()}
+      ${list.map((p) => targetRow(p, p)).join("")}
+    </div>
+  </div>`;
+}
+
 function renderTargets(s) {
   if (!s.inventory.length) {
     el.playerBody.innerHTML = `<div class="emptyframe">
@@ -1372,7 +1450,7 @@ function renderTargets(s) {
             <span class="tier__zebra" aria-hidden="true"></span>
             <span class="tier__count">${list.length}</span>
           </div>
-          ${list.map((p) => playerRow(p, p)).join("")}
+          ${targetTable(list)}
         </div>`
       : "";
 
@@ -1380,21 +1458,6 @@ function renderTargets(s) {
 }
 
 /* ------------------------------------------------------------- focus card */
-
-/* Rows that only exist for some players — IDP have no Fantasy Footballers
-   numbers at all, and printing a wall of em-dashes would say nothing. */
-const STATS = [
-  ["PROS RK", (p) => p.pros_rank],
-  ["PROS TIER", (p) => p.pros_tier],
-  ["POS RK", (p) => p.pos_rank_pros],
-  ["BYE", (p) => p.bye],
-  ["FFB TIER", (p) => p.ffb_tier],
-  ["FFB ADP", (p) => (typeof p.ffb_adp === "number" ? p.ffb_adp.toFixed(2) : null)],
-  ["FFB POS", (p) => p.ffb_pos_rank],
-  ["RISK", (p) => p.ffb_risk],
-  ["UPSIDE", (p) => p.ffb_upside],
-  ["ECR±ADP", (p) => (typeof p.ecr_vs_adp === "number" ? p.ecr_vs_adp : null)],
-];
 
 function focusStatus(p) {
   const taken = Boolean(p.taken);

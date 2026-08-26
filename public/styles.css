@@ -869,6 +869,111 @@ button {
   );
 }
 
+/* ------------------------------------------------------------ target table */
+
+/* TARGET holds locked and tagged players, not the whole pool, so it earns a
+   real table: every card stat as its own column. One grid template on
+   `.ttable` drives the header and every row — each `.ttable__row` is
+   `display: contents`, so its cells become direct grid children and line up
+   under the header with no per-row layout math, the same trick used for the
+   log and roster rows elsewhere in this file. */
+.ttable-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--hud);
+}
+
+.ttable {
+  display: grid;
+  font-variant-numeric: tabular-nums;
+}
+
+.ttable__row {
+  display: contents;
+}
+
+.ttable__h,
+.ttable__c {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 6px 7px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--hud-soft);
+}
+
+.ttable__h {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--scene-panel);
+  border-bottom: 1px solid var(--hud);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  white-space: nowrap;
+}
+
+.ttable__row:hover .ttable__c {
+  background: var(--scene-sunk);
+}
+
+/* A stat this player doesn't have (an IDP has no Fantasy Footballers numbers)
+   stays a dash rather than a gap — the column has to hold its width whether
+   or not this row has anything to put in it. */
+.ttable__c--empty {
+  color: var(--hud);
+}
+
+.ttable__name {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
+.ttable__namebtn {
+  padding: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.ttable__namebtn:hover,
+.ttable__namebtn:focus-visible {
+  text-decoration: underline;
+}
+
+.ttable__note,
+.ttable__gone {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-dim);
+  white-space: nowrap;
+}
+
+/* Watched, and already gone — struck out rather than faded, same rule as
+   ON THE BOARD: the reason he was on the list is still worth reading. */
+.ttable__row--taken .ttable__namebtn {
+  color: var(--ink-dim);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.ttable__actions {
+  gap: 4px;
+}
+
+.ttable__row:hover .lock,
+.ttable__row:hover .take {
+  opacity: 1;
+}
+
 /* ------------------------------------------------------------ plan cards */
 
 .plan {

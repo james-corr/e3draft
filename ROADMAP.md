@@ -34,6 +34,14 @@ stopping at round 18, not a defect). The IDP slots were the real bug and `MY TEA
 
 ## Shipped
 
+- **TARGET is a full stat table, not compact rows** (08/26/26): every card stat — PROS RK, PROS
+  TIER, POS RK, BYE, FFB TIER, FFB ADP, FFB POS, RISK, UPSIDE, ECR±ADP — is now its own column,
+  one player per row, still split under STILL ON THE BOARD and GONE. TARGET only ever holds locked
+  and tagged players, never the full pool, so it can afford the wider view; ON THE BOARD and PLANS
+  keep the compact ADP-plus-two-tiers rows, since those run to hundreds of players. The columns
+  are driven by the same `STATS` list the focus card already used, so a stat added to one shows up
+  in both with nothing to keep in sync by hand.
+
 - **The board says what each team has taken** (08/25/26): a tally pinned under the grid, one row
   per position and one column per manager, so "does anybody still need a quarterback before I am
   up again" is a row scan instead of twelve column reads. Zeros stay on the page and go quiet;

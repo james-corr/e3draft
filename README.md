@@ -58,9 +58,14 @@ your list.
   tier for anyone the UDK doesn't rank: every IDP, every kicker and defence, and the deep offence
   past roughly the top 172. The two scales differ — FFB tiers restart at 1 for each position,
   FantasyPros tiers run overall within a list — so in ALL a band reads "everyone who is his
-  position's tier N", and a band deep in a position view can hold both scales at once. Each row
-  prints the tier its band isn't showing (`FP` on the board, `FFB` and `FP` in TARGET), so a
-  disagreement between the two sources is visible without opening the focus card.
+  position's tier N", and a band deep in a position view can hold both scales at once. Each board
+  row prints the tier its band isn't showing (`FP`), so a disagreement between the two sources is
+  visible without opening the focus card. TARGET prints both tiers as their own columns, alongside
+  every other card stat, since it's a table rather than a banded pool.
+- **TARGET** — every locked and tagged player as one table: PROS RK, PROS TIER, POS RK, BYE, FFB
+  TIER, FFB ADP, FFB POS, RISK, UPSIDE and ECR±ADP each get their own column, split under STILL ON
+  THE BOARD and GONE the same way the old rows were. A stat a player doesn't have (IDP have no
+  Fantasy Footballers numbers) prints as a dash rather than dropping the column.
 - **PLANS** — your contingency branches. The meter is how much of that plan is still on the
   board, so you can see at a glance which strategy the draft has left intact. Struck-through
   names show the round.pick where they actually went.
