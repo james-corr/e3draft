@@ -1332,6 +1332,107 @@ button {
   background: var(--ink);
 }
 
+/* ---------------------------------------------------- the position tally */
+/* Eight rows pinned under the board: a header strip and one row per position
+   group. It is sticky to the bottom of the scroll box for the same reason the
+   round headers are sticky to the top — on the clock, the answer must be on
+   screen without a scroll to go and fetch it. Sticky rows can't stack
+   automatically, so each row's offset is counted up from the last in fixed
+   `--tally-h` steps; the row count is fixed by TALLY_ROWS in app.js, and the
+   two have to be changed together.
+
+   Borders vanish on sticky cells under border-collapse, so the rule separating
+   the tally from the board is drawn as a shadow rather than a border. */
+
+.grid tfoot {
+  --tally-h: 20px;
+}
+
+.grid tfoot th,
+.grid tfoot td {
+  position: sticky;
+  height: var(--tally-h);
+  padding: 1px 6px;
+  background: var(--scene-panel);
+  vertical-align: middle;
+  z-index: 2;
+}
+
+.grid tfoot th[scope="row"] {
+  left: 0;
+  z-index: 3;
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--ink-dim);
+  text-align: left;
+}
+
+/* Counted up from the bottom row, which sits at 0. */
+.grid tfoot tr:nth-last-child(1) th,
+.grid tfoot tr:nth-last-child(1) td { bottom: 0; }
+.grid tfoot tr:nth-last-child(2) th,
+.grid tfoot tr:nth-last-child(2) td { bottom: var(--tally-h); }
+.grid tfoot tr:nth-last-child(3) th,
+.grid tfoot tr:nth-last-child(3) td { bottom: calc(2 * var(--tally-h)); }
+.grid tfoot tr:nth-last-child(4) th,
+.grid tfoot tr:nth-last-child(4) td { bottom: calc(3 * var(--tally-h)); }
+.grid tfoot tr:nth-last-child(5) th,
+.grid tfoot tr:nth-last-child(5) td { bottom: calc(4 * var(--tally-h)); }
+.grid tfoot tr:nth-last-child(6) th,
+.grid tfoot tr:nth-last-child(6) td { bottom: calc(5 * var(--tally-h)); }
+.grid tfoot tr:nth-last-child(7) th,
+.grid tfoot tr:nth-last-child(7) td { bottom: calc(6 * var(--tally-h)); }
+.grid tfoot tr:nth-last-child(8) th,
+.grid tfoot tr:nth-last-child(8) td { bottom: calc(7 * var(--tally-h)); }
+
+/* The strip that says what the block below it is, and carries the rule. */
+.grid__tally-head th,
+.grid__tally-head td {
+  height: 18px;
+  box-shadow: inset 0 2px 0 var(--ink);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--ink-dim);
+}
+
+.grid__tally-head td {
+  text-align: left;
+}
+
+/* Saira, not DSEG14. The segmented face is the house numeral and is right on
+   the big readouts, but at tally size its 0 collapses into a blob and its 1 is
+   a bare tick — and telling a nought from a one at a glance is the entire job
+   of this block. */
+.grid__tally-n {
+  display: block;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: var(--tally-h);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+/* A zero is the answer to "does anyone here still need one" as much as a two
+   is, so it stays on the page — but it goes quiet, or twelve columns of nought
+   would sit louder than the counts that actually moved. */
+.grid tfoot td.is-zero .grid__tally-n {
+  font-weight: 500;
+  color: var(--ink-dim);
+  opacity: 0.55;
+}
+
+/* James's own column keeps the amber inset it carries the whole way down the
+   board, so the tally reads as the foot of his column rather than a new table. */
+.grid tfoot td.is-mine {
+  background: var(--alarm-field);
+  box-shadow: inset 2px 0 0 var(--caution);
+}
+
 .vh {
   position: absolute;
   width: 1px;

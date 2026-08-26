@@ -97,6 +97,50 @@ function tagMarks(id, tags = []) {
     .join("")}</span>`;
 }
 
+/* Which tier a player is banded by. The Fantasy Footballers tier is the source
+   of truth; FantasyPros is the fallback for everyone the UDK doesn't rank —
+   every IDP, every kicker and defence, and the deep offence past roughly the
+   top 172 overall. The two scales mean different things (FFB tiers restart at 1
+   for each position, FantasyPros tiers run overall within a list), so in a
+   mixed view one band can hold both. That is a trade James made deliberately on
+   08/25/26: one tier number per player, and his number wherever he has one. */
+const bandTier = (p) => p.ffb_tier ?? p.pros_tier ?? "—";
+
+/* "—" sorts last, everything else by its number, so the bands read 1, 2, 3 down
+   the panel. Ordering them by first sight — which is all the old code needed —
+   is not safe once FFB picks the band, because a run can meet tier 3 before
+   tier 2 whenever the sort key and the tier don't rise together. */
+const bandOrder = (t) => (typeof t === "number" ? t : Infinity);
+
+/* Where a player sits in the run. FFB decides it; FantasyPros only orders the
+   players FFB never ranked, who all sit behind the ones it did.
+ *
+ * Which FFB number depends on the scope, because the UDK ranks by position and
+ * publishes no overall list:
+ *
+ *   one position  ffb_pos_rank — the UDK's own ranking, and the honest answer
+ *                 to "who does FFB have next at this position". It is monotonic
+ *                 with ffb_tier in all four skill positions, so the bands come
+ *                 out contiguous: tier 1 entire, then tier 2, then tier 3.
+ *   ALL / IDP     ffb_adp — the only cross-position number FFB gives us, and
+ *                 the one already printed on every row, so the run reads in the
+ *                 same order as the figure beside it. IDP has neither, so that
+ *                 view is FantasyPros throughout, exactly as it was.
+ *
+ * The leading 0/1 is what keeps two scales from interleaving: an FFB position
+ * rank of 40 and a FantasyPros overall rank of 40 are not the same statement,
+ * so they are never compared — everyone FFB ranked comes first. */
+function boardOrder(p, scoped) {
+  const ffb = scoped ? p.ffb_pos_rank : p.ffb_adp;
+  return ffb != null ? [0, ffb] : [1, p.pros_rank ?? Infinity];
+}
+
+const byBoardOrder = (scoped) => (a, b) => {
+  const x = boardOrder(a, scoped);
+  const y = boardOrder(b, scoped);
+  return x[0] - y[0] || x[1] - y[1];
+};
+
 /* One player row, used by ON THE BOARD and by TARGET. The name block is the
    button that opens the focus card; the lock and the take button stay separate
    one-click paths, because during the draft neither can cost a detour.
@@ -105,22 +149,41 @@ function tagMarks(id, tags = []) {
    that is the whole job, since James is now typing every team's picks. It gets
    no confirm dialog: UNDO is one key away in the entry strip, and a modal on
    every pick would cost more over 240 picks than the occasional mis-click. */
-function playerRow(p, { starred, tags = [], note = "", taken = false, wentAt = null, wentTo = null }) {
+function playerRow(
+  p,
+  { starred, tags = [], note = "", taken = false, wentAt = null, wentTo = null },
+  banded = false
+) {
   const bits = [p.pos, p.team ?? "—", `BYE ${p.bye ?? "—"}`];
   if (taken) bits.push(`GONE ${wentAt ?? ""} ${wentTo ?? ""}`.trim());
   // Tags used to be spelled out here. They are toggles in the figs strip now,
   // and printing them twice made the sub-line wrap on the narrow board.
 
   const rk = p.pos_rank_pros ?? p.pros_rank ?? "—";
-  const figs =
-    p.ffb_adp == null && p.ffb_tier == null
-      ? `<span class="fig"><span class="fig__k">RK</span><span class="fig__v${seg(rk)}">${esc(
-          rk
-        )}</span></span>`
-      : `<span class="fig"><span class="fig__k">ADP</span><span class="fig__v seg">${adp(p.ffb_adp)}</span></span>
-         <span class="fig"><span class="fig__k">FFB</span><span class="fig__v${seg(
-           tier(p.ffb_tier)
-         )}">${tier(p.ffb_tier)}</span></span>`;
+  const chip = (k, v) =>
+    `<span class="fig"><span class="fig__k">${k}</span><span class="fig__v${seg(v)}">${esc(
+      v
+    )}</span></span>`;
+  const adpChip = `<span class="fig"><span class="fig__k">ADP</span><span class="fig__v seg">${adp(
+    p.ffb_adp
+  )}</span></span>`;
+
+  /* The row prints the tier its band ISN'T showing, so both sources are on
+     screen at once and a disagreement — Bowers is FFB tier 1 at tight end and
+     FantasyPros tier 2 overall — is readable without opening the focus card.
+     TARGET stacks rows under STILL ON THE BOARD / GONE rather than under a
+     tier, so there both numbers print. A player FFB never ranked keeps the RK
+     figure he already had: an "FFB —" chip down every IDP would say nothing. */
+  let figs;
+  if (p.ffb_tier != null) {
+    figs = banded
+      ? adpChip + chip("FP", tier(p.pros_tier))
+      : adpChip + chip("FFB", tier(p.ffb_tier)) + chip("FP", tier(p.pros_tier));
+  } else if (p.ffb_adp != null) {
+    figs = adpChip + chip("RK", rk);
+  } else {
+    figs = chip("RK", rk);
+  }
 
   return `<div class="prow${taken ? " prow--taken" : ""}">
     <button class="prow__main" data-focus="${esc(p.id)}">
@@ -521,10 +584,15 @@ function renderTagbar(s) {
 }
 
 function renderBoard(s) {
-  // FantasyPros tiers are overall within a list, not per-position, so ALL is
-  // one ranked run rather than position blocks stacked — stacking them buried
-  // the best back on the board under ten quarterbacks. But offence and IDP are
-  // two separate lists that both start at rank 1, so they never merge.
+  // ALL is one ranked run rather than position blocks stacked — stacking them
+  // buried the best back on the board under ten quarterbacks. But offence and
+  // IDP are two separate FantasyPros lists that both start at rank 1, so they
+  // never merge.
+  //
+  // Both the run and the bands are FFB's — see boardOrder and bandTier. In ALL
+  // that makes a band read "everyone who is his position's tier N" — TIER 1 is
+  // Gibbs, Chase, Bowers and Allen together, in ADP order — while the FP figure
+  // on each row keeps the overall FantasyPros standing in view.
   const idp = new Set(s.idpPositions);
   const gather = (keep) => s.positionOrder.filter(keep).flatMap((p) => s.available.byPosition[p] || []);
 
@@ -544,28 +612,36 @@ function renderBoard(s) {
           return activeTag === "LOCKED" ? w.starred : w.tags.includes(activeTag);
         });
 
-  shown.sort((a, b) => (a.pros_rank ?? 9999) - (b.pros_rank ?? 9999));
+  // Scoped to one position everywhere except the two mixed views, which have no
+  // per-position rank to compare across.
+  const scoped = activePos !== "ALL" && activePos !== "IDP";
+  shown.sort(byBoardOrder(scoped));
 
   // Tier counts for the whole pool when unfiltered, for one position otherwise.
   const counts = new Map();
   for (const p of shown) {
-    const t = p.pros_tier ?? "—";
+    const t = bandTier(p);
     counts.set(t, (counts.get(t) || 0) + 1);
   }
 
   const groups = new Map();
   for (const p of shown.slice(0, 70)) {
-    const t = p.pros_tier ?? "—";
+    const t = bandTier(p);
     if (!groups.has(t)) groups.set(t, []);
     groups.get(t).push(p);
   }
+
+  // Sorted by tier number rather than left in the order the run happened to
+  // meet them — see bandOrder. Rows inside a band keep the order the run
+  // arrived in, which is boardOrder's.
+  const bands = [...groups.entries()].sort((a, b) => bandOrder(a[0]) - bandOrder(b[0]));
 
   let html = "";
   // Only the best remaining tier raises the scarcity alarm. A late tier down to
   // one player is normal; the top tier running out is the cliff worth reaching.
   let isFirstGroup = true;
 
-  for (const [t, list] of groups) {
+  for (const [t, list] of bands) {
     const remaining = counts.get(t) ?? list.length;
     const thin = isFirstGroup && remaining <= 3;
     isFirstGroup = false;
@@ -580,7 +656,7 @@ function renderBoard(s) {
       </div>`;
 
     for (const p of list) {
-      html += playerRow(p, watch.get(p.id) || { starred: false });
+      html += playerRow(p, watch.get(p.id) || { starred: false }, true);
     }
     html += `</div>`;
   }
@@ -1039,12 +1115,93 @@ function renderGrid(s, { fromStream = false } = {}) {
     }
     html += `</tr>`;
   }
-  html += `</tbody></table>`;
+  html += `</tbody>`;
+  html += positionTally(s, teams, myIndex);
+  html += `</table>`;
   el.gridBody.innerHTML = html;
 
   // The editor rides on document.body, so a re-render leaves it pointing at a
   // cell that no longer exists. Re-anchor it to the new one.
   placeCellEditor();
+}
+
+/* ------------------------------------------------- what each team has taken */
+/* A tally foot under the board: one row per position, one column per manager,
+   read across rather than down. The question it answers is the one James asks
+   between his own two picks — "does anybody still need a quarterback before I
+   am up again?" — and that is a row scan across twelve managers, not twelve
+   separate column reads. Counting down a column works too, and is how you read
+   one manager's shape.
+
+   Counts come off `rosters[].counts`, which lib/state.js already builds from
+   the resolved picks, so keepers are in it the moment they are typed and an
+   unmatched cell is deliberately out of it — a name the matcher couldn't place
+   is not a position anybody has yet.
+
+   The five IDP positions are one row. The league starts one open `D` and one
+   `DB` (SCORING.md), so "how many defenders" is the decision-shaped number and
+   LB-versus-DE is not; the breakdown rides along as text on the cell for the
+   rare round where it matters. */
+
+const TALLY_ROWS = [
+  { key: "QB", label: "QB" },
+  { key: "RB", label: "RB" },
+  { key: "WR", label: "WR" },
+  { key: "TE", label: "TE" },
+  { key: "K", label: "K" },
+  { key: "DST", label: "DEF" },
+  { key: "IDP", label: "IDP" },
+];
+
+function positionTally(s, teams, myIndex) {
+  const idp = s.idpPositions?.length ? s.idpPositions : ["LB", "DE", "DT", "S", "CB"];
+
+  // Each column reads its counts from wherever that team currently sits, the
+  // same way the cells above it do — so the TEAMS-mode reorder preview moves a
+  // manager's tally with their picks instead of leaving it behind.
+  const counts = teams.map((_, c) => {
+    const from = teamsDraft ? teamsDraft.order[c] : c;
+    return s.rosters?.[from]?.counts ?? {};
+  });
+
+  let html = `<tfoot class="grid__tally"><tr class="grid__tally-head">
+    <th scope="row">POS</th>
+    <td colspan="${teams.length}">DRAFTED BY EACH TEAM</td>
+  </tr>`;
+
+  for (const row of TALLY_ROWS) {
+    html += `<tr><th scope="row">${row.label}</th>`;
+    for (let c = 0; c < teams.length; c++) {
+      const byPos = counts[c];
+      const n =
+        row.key === "IDP"
+          ? idp.reduce((sum, pos) => sum + (byPos[pos] || 0), 0)
+          : byPos[row.key] || 0;
+
+      // A zero is information — "nobody here has a tight end yet" is the whole
+      // point — but twelve columns of it early on would drown the numbers that
+      // moved. So zeros stay on the page and go quiet instead.
+      const cls = [c === myIndex ? "is-mine" : "", n ? "" : "is-zero"]
+        .filter(Boolean)
+        .join(" ");
+
+      const detail =
+        row.key === "IDP" && n
+          ? idp
+              .filter((pos) => byPos[pos])
+              .map((pos) => `${byPos[pos]} ${pos}`)
+              .join(", ")
+          : "";
+
+      const title = detail ? ` title="${esc(detail)}"` : "";
+      const label = `${teams[c]}: ${n} ${row.label}${detail ? ` — ${detail}` : ""}`;
+      html += `<td class="${cls}"${title}><span class="vh">${esc(label)}</span>
+        <span class="grid__tally-n" aria-hidden="true">${n}</span></td>`;
+    }
+    html += `</tr>`;
+  }
+
+  return `${html}</tfoot>`;
 }
 
 /* -------------------------------------------------------- the cell editor */
