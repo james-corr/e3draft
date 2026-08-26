@@ -18,10 +18,12 @@
       segmented readouts, Saira Condensed for names.
       STORY: James is on the clock. He reads scarcity, plan health, and what just went,
       then picks — without hunting.
-      FIRST VIEWPORT: Top rail carries format + REC lamp + tape counter. Scene fills the
-      frame: ON THE BOARD (tier-banded available pool) left, PLANS center, MY TEAM and
-      TRANSACTIONS right. Bottom rail holds the W—T zoom bar; primary action is the zoom
-      stop plus star-to-target.
+      FIRST VIEWPORT: Top rail carries format + REC lamp left, the W—T BOARD/FIELD/TARGET
+      zoom bar centered, and ON THE CLOCK plus the live round/pick and the YOU IN countdown
+      right. Scene fills the frame: ON THE BOARD (tier-banded available pool) left, VS and
+      PLANS center, ROUND NOTES/MY TEAM/TRANSACTIONS right. Bottom rail holds the POOL/GONE
+      counts and the SUN/NIGHT exposure toggle; primary action is the zoom stop plus
+      star-to-target.
       FORM: Camcorder viewfinder OSD, user-pinned over the assigned direction (grounded
       candidate 3, agate sports page). Seed key 7cd0e59b.
       FINISH: unreviewed and undocumented is unfinished; this build ends with the finish
@@ -40,12 +42,32 @@
           <span class="readout" id="format">E3 · 12T · 20R · HALF-PPR</span>
         </div>
 
+        <!-- BOARD / FIELD / TARGET — the primary framing switch, moved up from
+             the bottom rail so it sits where the eye starts rather than where
+             it ends. Same track, same id, same click handler; only its
+             position in the document changed. -->
         <div class="rail__group rail__group--center">
-          <span class="clock" id="clockLabel">ON THE CLOCK</span>
-          <strong class="clock__team" id="clockTeam">—</strong>
+          <div class="zoom" role="tablist" aria-label="Framing">
+            <span class="zoom__end seg" aria-hidden="true">W</span>
+            <div class="zoom__track" id="zoomTrack">
+              <span class="zoom__ticks" aria-hidden="true"></span>
+              <span class="zoom__fill" id="zoomFill" aria-hidden="true"></span>
+              <span class="zoom__marker" id="zoomMarker" aria-hidden="true"></span>
+              <button class="zoom__stop" role="tab" data-view="grid" aria-selected="false">BOARD</button>
+              <button class="zoom__stop" role="tab" data-view="field" aria-selected="true">FIELD</button>
+              <button class="zoom__stop" role="tab" data-view="player" aria-selected="false">TARGET</button>
+            </div>
+            <span class="zoom__end seg" aria-hidden="true">T</span>
+          </div>
         </div>
 
         <div class="rail__group">
+          <!-- ON THE CLOCK moved here, right-aligned beside the live round and
+               pick it explains — reads as one "where things stand" cluster
+               instead of splitting across the rail. -->
+          <span class="clock" id="clockLabel">ON THE CLOCK</span>
+          <strong class="clock__team" id="clockTeam">—</strong>
+          <span class="rail__sep" aria-hidden="true"></span>
           <span class="counter seg" id="counter" aria-label="Current round and pick">R00:P00</span>
           <span class="readout" id="overall">#000 / 240</span>
           <span class="rail__sep" aria-hidden="true"></span>
@@ -245,19 +267,6 @@
             <span class="readout__k">GONE</span>
             <span class="readout__v seg" id="goneCount">—</span>
           </span>
-        </div>
-
-        <div class="zoom" role="tablist" aria-label="Framing">
-          <span class="zoom__end seg" aria-hidden="true">W</span>
-          <div class="zoom__track" id="zoomTrack">
-            <span class="zoom__ticks" aria-hidden="true"></span>
-            <span class="zoom__fill" id="zoomFill" aria-hidden="true"></span>
-            <span class="zoom__marker" id="zoomMarker" aria-hidden="true"></span>
-            <button class="zoom__stop" role="tab" data-view="grid" aria-selected="false">BOARD</button>
-            <button class="zoom__stop" role="tab" data-view="field" aria-selected="true">FIELD</button>
-            <button class="zoom__stop" role="tab" data-view="player" aria-selected="false">TARGET</button>
-          </div>
-          <span class="zoom__end seg" aria-hidden="true">T</span>
         </div>
 
         <div class="rail__group">
