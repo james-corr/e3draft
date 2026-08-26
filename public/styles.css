@@ -2240,10 +2240,20 @@ button {
 
 .erow {
   display: grid;
-  grid-template-columns: 46px minmax(0, 1fr) minmax(0, 150px) 22px;
+  /* Round · name · verdict · watch tags · delete. The tag column is fixed, so a
+     row still being typed keeps its place in the grid instead of shuffling the
+     delete button sideways the moment a name resolves. */
+  grid-template-columns: 46px minmax(0, 1fr) minmax(0, 150px) 95px 22px;
   align-items: center;
   gap: 6px;
   margin-bottom: 4px;
+}
+
+/* The setup editor is a typing surface, not a glanceable one: there is no row
+   to hover here the way there is on the board, so the marks sit up at full
+   contrast and read as the form controls they are. */
+.erow__tags .tagmark {
+  opacity: 1;
 }
 
 .erow--note {

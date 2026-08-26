@@ -442,7 +442,9 @@ const server = createServer(async (req, res) => {
           const { matched, suggestion } = resolvePick(pool, name);
           return {
             name,
-            matched: matched.map((m) => ({ name: m.name, pos: m.pos, team: m.team })),
+            // The id rides along so the setup editor can hang the watch-tag
+            // toggles off a resolved target without a second lookup.
+            matched: matched.map((m) => ({ id: m.id, name: m.name, pos: m.pos, team: m.team })),
             suggestion: suggestion ?? null,
           };
         }),

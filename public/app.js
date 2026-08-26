@@ -1659,7 +1659,33 @@ document.addEventListener("keydown", (e) => {
 
 /* The setup overlay writes the same plan file the FIELD screen edits in place.
    Re-read on close so the two can't drift apart. */
-initSetup({ onClose: loadPlan });
+/* The setup editor renders the same five toggles but does not own them: the
+   inventory lives here, so it gets a bridge rather than a copy. `toggle` returns
+   the save, so the editor can put its own mark back if the write fails. */
+initSetup({
+  onClose: loadPlan,
+  tags: {
+    get vocab() {
+      return state?.tagVocabulary || [];
+    },
+    get marks() {
+      return state?.tagMarks || {};
+    },
+    get: (id) => (watch.get(id) || {}).tags || [],
+    toggle: async (id, t) => {
+      const cur = (watch.get(id) || {}).tags || [];
+      const next = cur.includes(t) ? cur.filter((x) => x !== t) : [...cur, t];
+      await patchPlayer(id, { tags: next });
+      // The board behind the overlay has to agree the moment it is closed.
+      if (state) {
+        renderTagbar(state);
+        renderBoard(state);
+        renderPlans(state);
+        renderTargets(state);
+      }
+    },
+  },
+});
 
 /* Clicking away closes the editor. Capture phase so it runs before the grid's
    own handler, which would otherwise reopen the cell that was just clicked. */
