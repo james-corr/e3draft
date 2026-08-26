@@ -198,6 +198,23 @@
               <h2 class="panel__title seg" id="h-player">TARGET</h2>
               <span class="panel__meta">Locked targets and watch tags</span>
             </div>
+            <!-- Find any player in the pool — tagged or not, locked or not — to
+                 tag him. Independent of the locked-targets list below it: this
+                 searches every player, that shows only the ones already
+                 starred. Text match narrows the field; the same FFB-first order
+                 ON THE BOARD already reads by breaks the tie. -->
+            <div class="psearch">
+              <input
+                class="psearch__input"
+                id="psearchInput"
+                type="text"
+                placeholder="find a player to tag"
+                aria-label="Search every player"
+                spellcheck="false"
+                autocomplete="off"
+              />
+              <div class="psearch__results" id="psearchResults" hidden></div>
+            </div>
             <div class="panel__body" id="playerBody"></div>
           </section>
         </div>

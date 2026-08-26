@@ -4,7 +4,7 @@
 
 import { esc, adp, tier, seg } from "./util.js";
 import { openSetup, closeSetup, isSetupOpen, initSetup } from "./setup.js";
-import { attachCombobox } from "./combobox.js";
+import { attachCombobox, rank } from "./combobox.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -42,6 +42,8 @@ const el = {
   boardClear: $("boardClear"),
   loadKeepers: $("loadKeepers"),
   playerBody: $("playerBody"),
+  psearchInput: $("psearchInput"),
+  psearchResults: $("psearchResults"),
   zoomTrack: $("zoomTrack"),
   zoomFill: $("zoomFill"),
   zoomMarker: $("zoomMarker"),
@@ -298,6 +300,14 @@ function draftValue(p) {
    nothing to sort, but it is also nothing to sort repeatedly for no reason. */
 let candidates = [];
 
+/* The player search's own list: FFB rank straight through, taken or not.
+   Pushing drafted players to the back is right for the pick box — it must
+   never offer someone you can't draft as the top suggestion — but wrong here,
+   where the point is finding and tagging anyone in the pool. Without this,
+   typing "gib" once the real Jahmyr Gibbs is off the board would rank a
+   free-agent Antonio Gibson above him. */
+let searchCandidates = [];
+
 function rebuildCandidates() {
   const open = [];
   const gone = [];
@@ -310,6 +320,7 @@ function rebuildCandidates() {
   open.sort(byValue);
   gone.sort(byValue);
   candidates = open.concat(gone);
+  searchCandidates = allPlayers.slice().sort(byValue);
 }
 
 function pickCandidates() {
@@ -1379,6 +1390,39 @@ function renderTargets(s) {
   el.playerBody.innerHTML = block("STILL ON THE BOARD", live) + block("GONE", gone);
 }
 
+/* ------------------------------------------------------------ player search */
+
+const SEARCH_MAX_ROWS = 5;
+
+/* Above the locked-targets list: finds anyone in the whole pool, tagged or
+   not, so a player can be found and tagged without already being a target.
+   Reuses the pick box's own matcher rather than a second one — `rank()`
+   filters `searchCandidates`, which is sorted FFB-first with FantasyPros
+   covering everyone FFB never priced, taken or not (`rebuildCandidates`), so
+   both rules the panel promises — best text match, then FFB rank — fall out
+   of the list it's handed instead of a scoring rule written here. */
+function renderSearch() {
+  const q = el.psearchInput.value;
+  if (!q.trim()) {
+    el.psearchResults.hidden = true;
+    el.psearchResults.innerHTML = "";
+    return;
+  }
+
+  const hits = rank(searchCandidates, q).slice(0, SEARCH_MAX_ROWS);
+  el.psearchResults.hidden = false;
+  el.psearchResults.innerHTML = hits.length
+    ? hits
+        .map((p) => {
+          const w = watch.get(p.id) || { starred: false, tags: [], note: "" };
+          return playerRow(p, { ...w, taken: p.taken });
+        })
+        .join("")
+    : `<p class="psearch__empty">No one matches "${esc(q)}".</p>`;
+}
+
+el.psearchInput.addEventListener("input", renderSearch);
+
 /* ------------------------------------------------------------- focus card */
 
 /* Rows that only exist for some players — IDP have no Fantasy Footballers
@@ -1520,6 +1564,7 @@ function render(payload) {
   renderLog(state);
   renderGrid(state, { fromStream: true });
   renderTargets(state);
+  renderSearch();
   syncFocus();
 
   if (!booted) {
@@ -1643,6 +1688,7 @@ document.addEventListener("click", async (e) => {
         renderBoard(state);
         renderPlans(state);
         renderTargets(state);
+        renderSearch();
         if (held) {
           document
             .querySelector(
@@ -1839,6 +1885,7 @@ initSetup({
         renderBoard(state);
         renderPlans(state);
         renderTargets(state);
+        renderSearch();
       }
     },
   },
