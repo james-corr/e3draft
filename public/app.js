@@ -83,9 +83,38 @@ const bandTier = (p) => p.ffb_tier ?? p.pros_tier ?? "—";
 
 /* "—" sorts last, everything else by its number, so the bands read 1, 2, 3 down
    the panel. Ordering them by first sight — which is all the old code needed —
-   scrambles them now, because the run is sorted on FantasyPros rank while the
-   bands come from FFB, and the two don't rise together. */
+   is not safe once FFB picks the band, because a run can meet tier 3 before
+   tier 2 whenever the sort key and the tier don't rise together. */
 const bandOrder = (t) => (typeof t === "number" ? t : Infinity);
+
+/* Where a player sits in the run. FFB decides it; FantasyPros only orders the
+   players FFB never ranked, who all sit behind the ones it did.
+ *
+ * Which FFB number depends on the scope, because the UDK ranks by position and
+ * publishes no overall list:
+ *
+ *   one position  ffb_pos_rank — the UDK's own ranking, and the honest answer
+ *                 to "who does FFB have next at this position". It is monotonic
+ *                 with ffb_tier in all four skill positions, so the bands come
+ *                 out contiguous: tier 1 entire, then tier 2, then tier 3.
+ *   ALL / IDP     ffb_adp — the only cross-position number FFB gives us, and
+ *                 the one already printed on every row, so the run reads in the
+ *                 same order as the figure beside it. IDP has neither, so that
+ *                 view is FantasyPros throughout, exactly as it was.
+ *
+ * The leading 0/1 is what keeps two scales from interleaving: an FFB position
+ * rank of 40 and a FantasyPros overall rank of 40 are not the same statement,
+ * so they are never compared — everyone FFB ranked comes first. */
+function boardOrder(p, scoped) {
+  const ffb = scoped ? p.ffb_pos_rank : p.ffb_adp;
+  return ffb != null ? [0, ffb] : [1, p.pros_rank ?? Infinity];
+}
+
+const byBoardOrder = (scoped) => (a, b) => {
+  const x = boardOrder(a, scoped);
+  const y = boardOrder(b, scoped);
+  return x[0] - y[0] || x[1] - y[1];
+};
 
 /* One player row, used by ON THE BOARD and by TARGET. The name block is the
    button that opens the focus card; the lock and the take button stay separate
@@ -533,10 +562,10 @@ function renderBoard(s) {
   // IDP are two separate FantasyPros lists that both start at rank 1, so they
   // never merge.
   //
-  // The run is ordered by FantasyPros rank and banded by bandTier, which
-  // prefers FFB. In ALL that makes a band read "everyone who is his position's
-  // tier N" — TIER 1 is Gibbs, Chase, Bowers and Allen together — while the FP
-  // figure on each row keeps the overall standing in view.
+  // Both the run and the bands are FFB's — see boardOrder and bandTier. In ALL
+  // that makes a band read "everyone who is his position's tier N" — TIER 1 is
+  // Gibbs, Chase, Bowers and Allen together, in ADP order — while the FP figure
+  // on each row keeps the overall FantasyPros standing in view.
   const idp = new Set(s.idpPositions);
   const gather = (keep) => s.positionOrder.filter(keep).flatMap((p) => s.available.byPosition[p] || []);
 
@@ -556,7 +585,10 @@ function renderBoard(s) {
           return activeTag === "LOCKED" ? w.starred : w.tags.includes(activeTag);
         });
 
-  shown.sort((a, b) => (a.pros_rank ?? 9999) - (b.pros_rank ?? 9999));
+  // Scoped to one position everywhere except the two mixed views, which have no
+  // per-position rank to compare across.
+  const scoped = activePos !== "ALL" && activePos !== "IDP";
+  shown.sort(byBoardOrder(scoped));
 
   // Tier counts for the whole pool when unfiltered, for one position otherwise.
   const counts = new Map();
@@ -573,8 +605,8 @@ function renderBoard(s) {
   }
 
   // Sorted by tier number rather than left in the order the run happened to
-  // meet them — see bandOrder. Rows inside a band stay in FantasyPros rank
-  // order, which is the order the run arrived in.
+  // meet them — see bandOrder. Rows inside a band keep the order the run
+  // arrived in, which is boardOrder's.
   const bands = [...groups.entries()].sort((a, b) => bandOrder(a[0]) - bandOrder(b[0]));
 
   let html = "";

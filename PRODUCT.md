@@ -53,12 +53,19 @@ knows. Its live truth comes from the league's real shared board, not from a rank
   Fantasy Footballers UDK directly (`tools/ingest/`). This reverses the earlier "scraping is out
   of scope" decision, which had made a manual hour-long chore of the one thing that has to be
   current on draft day. The FantasyPros side is not automated yet.
-- FantasyPros is the base *list* and the sort order; the Fantasy Footballers tier is the *tier*
-  James drafts off. **Changed 08/25/26** — ON THE BOARD banded by FantasyPros tier until then,
-  with the FFB tier printed on the row as a secondary figure. It now bands by FFB tier and falls
-  back to FantasyPros only where FFB has none. The known cost, accepted deliberately: the two
-  sources scale tiers differently, so a single band can hold both and its "N left" count mixes
-  them. The alternative — FFB in position views only — was considered and turned down.
+- FantasyPros is the base *list*; Fantasy Footballers decides the *order* and the *tier* on
+  ON THE BOARD. **Changed 08/25/26** — the panel was sorted and banded by FantasyPros until then,
+  with the FFB tier printed on the row as a secondary figure. FantasyPros is now the fallback for
+  both jobs, used only for players FFB never ranked, who sort behind every player it did.
+- The order has two FFB keys, because the UDK ranks by position and publishes no overall list:
+  a position view uses its own `ffb_pos_rank` (monotonic with `ffb_tier`, so the bands come out
+  contiguous), ALL uses `ffb_adp` (the only cross-position number available, and the one already
+  printed on the row). A player's neighbours therefore differ between ALL and his position view.
+  That is the cost of there being no overall FFB ranking to use in both.
+- The known cost of FFB tiers, accepted deliberately: the two sources scale tiers differently
+  (FFB restarts at 1 per position, FantasyPros runs overall within a list), so a single band can
+  hold both and its "N left" count mixes them. The alternative — FFB in position views only —
+  was considered and turned down.
 
 ## Capabilities and Constraints
 
