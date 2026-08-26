@@ -72,6 +72,31 @@ const ICON = {
   rec: `<svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="4.2" fill="currentColor" stroke="none"/><circle cx="8" cy="8" r="6.6"/></svg>`,
 };
 
+/* The five watch tags as one-click marks, for any surface that shows a player's
+   name: ON THE BOARD, PLANS and TARGET all render this same strip.
+
+   Each mark is a toggle exactly like the lock beside it — one click writes the
+   inventory, no card to open, no detour on the clock. Set marks stay lit; unset
+   ones sit back at rest and come up with the row, which is the same rule the
+   lock and the take button already follow, so that 70 rows of board do not read
+   as 350 buttons.
+
+   The letter is the whole signal. Fill says on or off, never colour: this gets
+   read in direct sun, and amber is reserved for caution. */
+function tagMarks(id, tags = []) {
+  if (!id) return "";
+  const vocab = state?.tagVocabulary || [];
+  const marks = state?.tagMarks || {};
+  return `<span class="tagmarks">${vocab
+    .map((t) => {
+      const on = tags.includes(t);
+      return `<button class="tagmark" data-tagset="${esc(t)}" data-tagfor="${esc(id)}"
+        aria-pressed="${on}" title="${esc(t)}"
+        aria-label="${on ? "Remove" : "Add"} tag ${esc(t)}">${esc(marks[t] || t.slice(0, 1))}</button>`;
+    })
+    .join("")}</span>`;
+}
+
 /* One player row, used by ON THE BOARD and by TARGET. The name block is the
    button that opens the focus card; the lock and the take button stay separate
    one-click paths, because during the draft neither can cost a detour.
@@ -83,7 +108,8 @@ const ICON = {
 function playerRow(p, { starred, tags = [], note = "", taken = false, wentAt = null, wentTo = null }) {
   const bits = [p.pos, p.team ?? "—", `BYE ${p.bye ?? "—"}`];
   if (taken) bits.push(`GONE ${wentAt ?? ""} ${wentTo ?? ""}`.trim());
-  if (tags.length) bits.push(tags.join(", "));
+  // Tags used to be spelled out here. They are toggles in the figs strip now,
+  // and printing them twice made the sub-line wrap on the narrow board.
 
   const rk = p.pos_rank_pros ?? p.pros_rank ?? "—";
   const figs =
@@ -104,6 +130,7 @@ function playerRow(p, { starred, tags = [], note = "", taken = false, wentAt = n
     </button>
     <span class="prow__figs">
       ${figs}
+      ${tagMarks(p.id, tags)}
       <button class="lock" data-star="${esc(p.id)}" aria-pressed="${Boolean(starred)}"
         aria-label="${starred ? "Unlock" : "Lock"} ${esc(p.name)} as a target">${
           starred ? ICON.locked : ICON.lock
@@ -587,10 +614,13 @@ function renderPlans(s) {
             // ("CHECK LATE ROUNDERS"). Those are notes, not open targets.
             const kind = t.unknown ? "note" : t.taken ? "taken" : "live";
             const right = t.unknown ? "note" : t.taken ? esc(t.wentAt ?? "gone") : "open";
+            // A reminder row resolves to no player, so there is nothing to tag.
+            const tags = (t.id && watch.get(t.id)?.tags) || [];
             return `<div class="ptarget ptarget--${kind}">
               <span class="ptarget__rd">R${String(t.round).padStart(2, "0")}</span>
               <button class="ptarget__name" data-edit-target="${b.index}:${t.index}"
                 title="Change this target">${esc(t.name)}</button>
+              ${t.id ? tagMarks(t.id, tags) : `<span class="tagmarks"></span>`}
               <span class="ptarget__at">${right}</span>
             </div>`;
           })
@@ -1253,9 +1283,11 @@ function openFocus(id, trigger) {
       ${state.tagVocabulary
         .map(
           (t) =>
-            `<button class="tagbtn" data-tagset="${esc(t)}" aria-pressed="${w.tags.includes(
-              t
-            )}">${esc(t.toUpperCase())}</button>`
+            `<button class="tagbtn" data-tagset="${esc(t)}" data-tagfor="${esc(
+              id
+            )}" aria-pressed="${w.tags.includes(t)}"><span class="tagbtn__mark">${esc(
+              (state.tagMarks || {})[t] || t.slice(0, 1)
+            )}</span>${esc(t.toUpperCase())}</button>`
         )
         .join("")}
     </div>
@@ -1428,15 +1460,40 @@ document.addEventListener("click", async (e) => {
     return;
   }
 
+  // One handler for every tag control in the app. The row marks, the plan marks
+  // and the focus card all name their player in `data-tagfor`, so none of them
+  // depends on a card being open.
   const tagBtn = e.target.closest("[data-tagset]");
-  if (tagBtn && focusId) {
+  if (tagBtn) {
+    const id = tagBtn.dataset.tagfor || focusId;
+    if (!id) return;
     const t = tagBtn.dataset.tagset;
-    const cur = (watch.get(focusId) || {}).tags || [];
+    const cur = (watch.get(id) || {}).tags || [];
     const on = cur.includes(t);
     const next = on ? cur.filter((x) => x !== t) : [...cur, t];
+    // Paint first: the stream repaints a moment later, and a toggle that waits
+    // on a round trip feels broken when 240 picks are going through this UI.
     tagBtn.setAttribute("aria-pressed", String(!on));
     try {
-      await patchPlayer(focusId, { tags: next });
+      await patchPlayer(id, { tags: next });
+      // Every surface showing this player has to agree, including the filter
+      // counts on the tag rail. Repainting throws away the button that was just
+      // pressed, so put the keyboard back on its replacement — tagging a run of
+      // players with the keys is otherwise a dead end after the first one.
+      if (state) {
+        const held = document.activeElement === tagBtn;
+        renderTagbar(state);
+        renderBoard(state);
+        renderPlans(state);
+        renderTargets(state);
+        if (held) {
+          document
+            .querySelector(
+              `[data-tagset="${CSS.escape(t)}"][data-tagfor="${CSS.escape(id)}"]`
+            )
+            ?.focus();
+        }
+      }
     } catch {
       tagBtn.setAttribute("aria-pressed", String(on));
     }

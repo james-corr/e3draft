@@ -63,9 +63,15 @@ your list.
 
 ## Watch tags
 
-Five tags, carried over from the old sheet: **Breakout**, **Sleepers**, **Busts**, **Late Round
-Fliers**, **My Guys**. A tag and a lock are one record — a lock says *I want him*, a tag says
-*why* — so both are set from the same focus card, and both survive the yearly refresh.
+Five tags, carried over from the old sheet: **Sleepers** `S`, **Values** `V`, **Busts** `B`,
+**My Guys** `G`, **Late Round Fliers** `F`. A tag and a lock are one record — a lock says *I want
+him*, a tag says *why* — so both write the same entry, and both survive the yearly refresh.
+
+Every row that shows a player's name carries the five letters as toggles: ON THE BOARD, each
+target in PLANS, and the TARGET panel. One click sets or clears a tag, the same way the lock
+beside them works — no card to open mid-draft. A set letter fills in solid; unset ones sit back
+until the row is hovered. The focus card still spells the words out, and shows each letter in
+front of its tag so the marks on the rows can be read without a legend.
 
 ## Setup: writing the plans and notes
 
