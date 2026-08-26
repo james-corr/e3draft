@@ -1085,12 +1085,93 @@ function renderGrid(s, { fromStream = false } = {}) {
     }
     html += `</tr>`;
   }
-  html += `</tbody></table>`;
+  html += `</tbody>`;
+  html += positionTally(s, teams, myIndex);
+  html += `</table>`;
   el.gridBody.innerHTML = html;
 
   // The editor rides on document.body, so a re-render leaves it pointing at a
   // cell that no longer exists. Re-anchor it to the new one.
   placeCellEditor();
+}
+
+/* ------------------------------------------------- what each team has taken */
+/* A tally foot under the board: one row per position, one column per manager,
+   read across rather than down. The question it answers is the one James asks
+   between his own two picks — "does anybody still need a quarterback before I
+   am up again?" — and that is a row scan across twelve managers, not twelve
+   separate column reads. Counting down a column works too, and is how you read
+   one manager's shape.
+
+   Counts come off `rosters[].counts`, which lib/state.js already builds from
+   the resolved picks, so keepers are in it the moment they are typed and an
+   unmatched cell is deliberately out of it — a name the matcher couldn't place
+   is not a position anybody has yet.
+
+   The five IDP positions are one row. The league starts one open `D` and one
+   `DB` (SCORING.md), so "how many defenders" is the decision-shaped number and
+   LB-versus-DE is not; the breakdown rides along as text on the cell for the
+   rare round where it matters. */
+
+const TALLY_ROWS = [
+  { key: "QB", label: "QB" },
+  { key: "RB", label: "RB" },
+  { key: "WR", label: "WR" },
+  { key: "TE", label: "TE" },
+  { key: "K", label: "K" },
+  { key: "DST", label: "DEF" },
+  { key: "IDP", label: "IDP" },
+];
+
+function positionTally(s, teams, myIndex) {
+  const idp = s.idpPositions?.length ? s.idpPositions : ["LB", "DE", "DT", "S", "CB"];
+
+  // Each column reads its counts from wherever that team currently sits, the
+  // same way the cells above it do — so the TEAMS-mode reorder preview moves a
+  // manager's tally with their picks instead of leaving it behind.
+  const counts = teams.map((_, c) => {
+    const from = teamsDraft ? teamsDraft.order[c] : c;
+    return s.rosters?.[from]?.counts ?? {};
+  });
+
+  let html = `<tfoot class="grid__tally"><tr class="grid__tally-head">
+    <th scope="row">POS</th>
+    <td colspan="${teams.length}">DRAFTED BY EACH TEAM</td>
+  </tr>`;
+
+  for (const row of TALLY_ROWS) {
+    html += `<tr><th scope="row">${row.label}</th>`;
+    for (let c = 0; c < teams.length; c++) {
+      const byPos = counts[c];
+      const n =
+        row.key === "IDP"
+          ? idp.reduce((sum, pos) => sum + (byPos[pos] || 0), 0)
+          : byPos[row.key] || 0;
+
+      // A zero is information — "nobody here has a tight end yet" is the whole
+      // point — but twelve columns of it early on would drown the numbers that
+      // moved. So zeros stay on the page and go quiet instead.
+      const cls = [c === myIndex ? "is-mine" : "", n ? "" : "is-zero"]
+        .filter(Boolean)
+        .join(" ");
+
+      const detail =
+        row.key === "IDP" && n
+          ? idp
+              .filter((pos) => byPos[pos])
+              .map((pos) => `${byPos[pos]} ${pos}`)
+              .join(", ")
+          : "";
+
+      const title = detail ? ` title="${esc(detail)}"` : "";
+      const label = `${teams[c]}: ${n} ${row.label}${detail ? ` — ${detail}` : ""}`;
+      html += `<td class="${cls}"${title}><span class="vh">${esc(label)}</span>
+        <span class="grid__tally-n" aria-hidden="true">${n}</span></td>`;
+    }
+    html += `</tr>`;
+  }
+
+  return `${html}</tfoot>`;
 }
 
 /* -------------------------------------------------------- the cell editor */

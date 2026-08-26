@@ -34,6 +34,14 @@ stopping at round 18, not a defect). The IDP slots were the real bug and `MY TEA
 
 ## Shipped
 
+- **The board says what each team has taken** (08/25/26): a tally pinned under the grid, one row
+  per position and one column per manager, so "does anybody still need a quarterback before I am
+  up again" is a row scan instead of twelve column reads. Zeros stay on the page and go quiet;
+  counts come off `rosters[].counts`, which `lib/state.js` already built, so keepers are in it
+  the moment they are typed and an unmatched cell is deliberately out of it. The five IDP
+  positions are one row — the league starts one open `D` and one `DB`, so "how many defenders"
+  is the decision-shaped number and the LB-versus-DE split rides along as hover text.
+
 - **LOAD KEEPERS, and CLEAR BOARD stops sparing them** (08/25/26): `KEEPERS26.md` is a
   hand-editable Manager/Player/Round table at the repo root; the new **LOAD KEEPERS** button on
   the BOARD screen writes each row onto its manager's cell the same way a typed-in keeper does.
