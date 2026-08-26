@@ -509,6 +509,30 @@ button {
   overflow: auto;
 }
 
+/* ------------------------------------------------------------ player search */
+
+/* Sits between the TARGET panel's head and its locked-targets body, on the
+   head's own 12px rhythm. Collapses to nothing when the field is empty — a
+   lookup, not a permanent browse list — and the render caps it at five rows
+   itself, so it never needs a scrollbar of its own. */
+.psearch {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--hud);
+}
+
+.psearch__results {
+  margin-top: 6px;
+}
+
+.psearch__empty {
+  margin: 4px 2px 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
 /* --------------------------------------------------------- position bar */
 
 .posbar {
@@ -2362,12 +2386,14 @@ button {
   align-items: start;
 }
 
-/* One field treatment across both overlays. */
+/* One field treatment across both overlays, and the player search — same sunk
+   well sitting on the same scene ground. */
 .erow__rd,
 .erow__name,
 .erow__text,
 .ecard__name,
-.focus__note {
+.focus__note,
+.psearch__input {
   display: block;
   width: 100%;
   padding: 6px 8px;
@@ -2381,7 +2407,8 @@ button {
 
 .erow__rd,
 .erow__name,
-.ecard__name {
+.ecard__name,
+.psearch__input {
   height: 30px;
   padding-block: 0;
 }
