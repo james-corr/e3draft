@@ -9,15 +9,18 @@ there is no network in the loop at all — the board is a file on this machine.
 
 ## Running it
 
-Double-click **`Start Draft.command`**, or:
+Double-click **`Start Draft.command`** once. It starts the server in the background and opens
+<http://localhost:4173> — you can close the Terminal window that appears; the server keeps
+running. Bookmark that URL: as long as you started it once this session, loading the bookmark
+is all you need, no re-running the command.
 
-```bash
-npm start
-```
-
-Then open <http://localhost:4173>.
+It keeps running until you double-click **`Stop Draft.command`**, or you log out / shut down.
+A crash or restart means running `Start Draft.command` again.
 
 There is nothing to install — no dependencies, no build step. Node 18 or newer.
+
+Prefer the terminal? `npm start` runs it in the foreground instead (closing that terminal
+stops it), same as before.
 
 ## Draft-day controls
 

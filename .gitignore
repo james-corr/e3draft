@@ -24,6 +24,9 @@ data/*.json.bak
 # Saved thefantasyfootballers.com session cookies. Never commit.
 .auth/
 
+# pid + log file for the background server started by Start Draft.command
+.run/
+
 # Raw source pulls kept for diffing; regenerate with npm run refresh
 data/raw/
 
