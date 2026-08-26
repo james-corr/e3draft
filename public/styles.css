@@ -683,6 +683,69 @@ button {
   font-variant-numeric: tabular-nums;
 }
 
+/* Watch-tag marks — the five tags as one-click toggles on any row that shows a
+   player's name. They behave exactly like the lock beside them, because that is
+   what they are: a set tag stays lit, an unset one rests at low contrast and
+   comes up with the row, so a full board does not read as a wall of buttons.
+
+   State is carried by fill, never by hue — the tags have no colour of their own.
+   Amber stays caution, and the board is read in direct sunlight. */
+.tagmarks {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+}
+
+.tagmark {
+  width: 17px;
+  height: 17px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1;
+  color: var(--ink-dim);
+  border: 1px solid var(--hud);
+  opacity: 0.4;
+  transition: opacity 0.15s, color 0.15s, background-color 0.15s, border-color 0.15s;
+}
+
+.prow:hover .tagmark,
+.ptarget:hover .tagmark,
+.tagmark:focus-visible {
+  opacity: 1;
+}
+
+.tagmark:hover {
+  color: var(--ink);
+  border-color: var(--ink-dim);
+}
+
+/* Set: inverted to solid ink, the same way a pressed filter chip reads. A mark
+   that is on is never dimmed by the row being at rest — that is the whole point
+   of putting it on the row. */
+.tagmark[aria-pressed="true"] {
+  opacity: 1;
+  background: var(--ink);
+  color: var(--scene-panel);
+  border-color: var(--ink);
+}
+
+/* The focus card spells the tag out and keeps the letter in front of it, so the
+   marks on the rows have somewhere to be learned. */
+.tagbtn__mark {
+  display: inline-grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  font-size: 10px;
+  font-weight: 700;
+  border: 1px solid currentColor;
+}
+
 /* Focus lock — a starred target wears the closed bracket pair. */
 .lock {
   width: 22px;
@@ -883,7 +946,10 @@ button {
 
 .ptarget {
   display: grid;
-  grid-template-columns: 28px 1fr auto;
+  /* Round · name · tag marks · status. The marks column is fixed rather than
+     auto so a reminder row with nothing to tag still lines its status up with
+     the rows above and below it. */
+  grid-template-columns: 28px 1fr 95px auto;
   align-items: center;
   gap: 8px;
   padding: 3px 9px;
@@ -2275,10 +2341,20 @@ button {
 
 .erow {
   display: grid;
-  grid-template-columns: 46px minmax(0, 1fr) minmax(0, 150px) 22px;
+  /* Round · name · verdict · watch tags · delete. The tag column is fixed, so a
+     row still being typed keeps its place in the grid instead of shuffling the
+     delete button sideways the moment a name resolves. */
+  grid-template-columns: 46px minmax(0, 1fr) minmax(0, 150px) 95px 22px;
   align-items: center;
   gap: 6px;
   margin-bottom: 4px;
+}
+
+/* The setup editor is a typing surface, not a glanceable one: there is no row
+   to hover here the way there is on the board, so the marks sit up at full
+   contrast and read as the form controls they are. */
+.erow__tags .tagmark {
+  opacity: 1;
 }
 
 .erow--note {

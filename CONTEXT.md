@@ -38,7 +38,7 @@ loop pushing over SSE, and the migration off the old workbooks.
 
 **Added 08/18/26:**
 - **The watchlist is one system.** A focus card behind every player name holds the lock, the five
-  real tags (Breakout / Sleepers / Busts / Late Round Fliers / My Guys) and a note, all writing a
+  real tags (Sleepers / Values / Busts / My Guys / Late Round Fliers) and a note, all writing a
   single record. Tag chips filter the board, counted over players still available.
 - **The round notes render.** Ten of James's own margin notes had been extracted since the
   migration with nothing showing them. They now run as a cue strip for the round in play (or the

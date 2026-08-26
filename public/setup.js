@@ -21,6 +21,12 @@ let pool = null; // the full player list, fetched once per open
 let checkTimer = null;
 let hintTimer = null;
 let onClose = null;
+/* The watch tags are not part of the plan draft. A plan row is a working copy
+   that nothing writes until SAVE; a tag is an inventory record that saves on the
+   click, exactly as it does on the board. So this editor does not own them — the
+   viewfinder does, and hands them over as a bridge (rule 6: one mechanism, not a
+   second one alongside it). */
+let tagsApi = null;
 /* Last known verdict per typed name. Kept across rebuilds so adding a row
    doesn't blank every status while the next check is in flight. */
 const verdicts = new Map();
@@ -131,6 +137,9 @@ function render() {
                   value="${esc(t.player ?? "")}" aria-label="Target player" autocomplete="off" />
                 <span class="erow__status" data-status="${bi}:${ti}"
                   data-state="${verdict(t.player).state}">${esc(verdict(t.player).text)}</span>
+                <span class="erow__tags" data-tagcell="${bi}:${ti}">${tagCell(
+                  verdict(t.player).id
+                )}</span>
                 <button class="iconbtn" data-del-target="${bi}:${ti}"
                   aria-label="Remove this target">${ICO.x}</button>
               </div>`
@@ -185,16 +194,39 @@ function render() {
    miss with a suggestion is the real typo signal, and only that raises alarm. */
 function verdict(name) {
   const key = String(name ?? "").trim();
-  if (!key) return { state: "blank", text: "" };
+  if (!key) return { state: "blank", text: "", id: null };
   const v = verdicts.get(key);
-  if (!v) return { state: "blank", text: "" };
+  if (!v) return { state: "blank", text: "", id: null };
   if (v.matched.length) {
     const m = v.matched[0];
-    return { state: "ok", text: `${m.pos} · ${m.team ?? "—"}` };
+    return { state: "ok", text: `${m.pos} · ${m.team ?? "—"}`, id: m.id ?? null };
   }
   return v.suggestion
-    ? { state: "bad", text: `NO MATCH — ${v.suggestion}` }
-    : { state: "note", text: "NOTE" };
+    ? { state: "bad", text: `NO MATCH — ${v.suggestion}`, id: null }
+    : { state: "note", text: "NOTE", id: null };
+}
+
+/* The same five toggles the board and the plans carry, on a target that has
+   actually resolved to somebody. Writing the plans is exactly when the thought
+   "this one is my late-round flier" happens, and until now there was nowhere to
+   put it without leaving the editor.
+
+   A row still being typed, or a reminder line like "CHECK LATE ROUNDERS",
+   resolves to nobody and gets a placeholder so the columns stay aligned. */
+function tagCell(id) {
+  if (!tagsApi || !id) return `<span class="tagmarks"></span>`;
+  const tags = tagsApi.get(id);
+  return `<span class="tagmarks">${tagsApi.vocab
+    .map((t) => {
+      const on = tags.includes(t);
+      return `<button type="button" class="tagmark" data-settag="${esc(t)}" data-tagfor="${esc(
+        id
+      )}" aria-pressed="${on}" title="${esc(t)}"
+        aria-label="${on ? "Remove" : "Add"} tag ${esc(t)}">${esc(
+          tagsApi.marks[t] || t.slice(0, 1)
+        )}</button>`;
+    })
+    .join("")}</span>`;
 }
 
 const ICO = {
@@ -240,6 +272,10 @@ function checkNames() {
       const v = verdict(cell.name);
       slot.textContent = v.text;
       slot.dataset.state = v.state;
+      // A name that has just resolved earns its toggles; one that stopped
+      // resolving loses them, so the row never offers to tag the wrong player.
+      const cellEl = e.body.querySelector(`[data-tagcell="${cell.key}"]`);
+      if (cellEl) cellEl.innerHTML = tagCell(v.id);
     });
   }, 300);
 }
@@ -299,6 +335,21 @@ function nextRound(picks) {
 function onClick(ev) {
   const e = handles();
   if (!draft) return;
+
+  /* A watch tag is not plan data, so it writes straight through and never
+     touches `draft` or the dirty flag — SAVE stays a promise about the plans
+     alone. Handled here rather than by the viewfinder's document listener, and
+     under its own attribute name, so one click is not counted twice. */
+  const tagBtn = ev.target.closest("[data-settag]");
+  if (tagBtn) {
+    const id = tagBtn.dataset.tagfor;
+    const t = tagBtn.dataset.settag;
+    if (!tagsApi || !id) return;
+    const on = tagBtn.getAttribute("aria-pressed") === "true";
+    tagBtn.setAttribute("aria-pressed", String(!on));
+    tagsApi.toggle(id, t).catch(() => tagBtn.setAttribute("aria-pressed", String(on)));
+    return;
+  }
 
   if (ev.target.closest("[data-add-note]")) {
     draft.notes.push({ round: 1, text: "" });
@@ -441,9 +492,10 @@ function hint(text, bad = false) {
 
 /* ---------------------------------------------------------------- wiring */
 
-export function initSetup({ onClose: closed } = {}) {
+export function initSetup({ onClose: closed, tags } = {}) {
   const e = handles();
   onClose = closed;
+  tagsApi = tags ?? null;
   e.body.addEventListener("input", onInput);
   e.body.addEventListener("click", onClick);
   e.save.addEventListener("click", save);
