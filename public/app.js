@@ -1355,6 +1355,54 @@ function cellAt(round, teamIndex) {
   return { name: "", keeper: false };
 }
 
+/* The next cell still waiting for a pick, counting forward from this one.
+   The snake, same as cellFor/nextOpen in lib/picks.js: odd rounds run left to
+   right, even rounds come back the other way, and the last cell of a round
+   hands off to the same manager at the top of the next one. Computed here
+   rather than asked of the server because the board is the same shape on both
+   sides of the wire, and a round trip to find out where the cursor goes would
+   put a pause in the middle of the typing rhythm this exists to protect.
+
+   Filled cells are stepped over, not landed on. A cell with something in it is
+   a pick that has already been spent — most often a keeper, typed in weeks
+   early — and the manager holding it does not pick again there. Landing on one
+   would put the next name typed on top of the keeper AND one slot out of step
+   for every pick after it, which is the one way this could quietly corrupt the
+   board rather than just annoy.
+
+   Returns null when nothing open is left ahead — the last pick of the draft,
+   or a run that walked off the end of the board. */
+function nextCellInOrder(round, teamIndex) {
+  const teamCount = state?.league?.teams?.length ?? 0;
+  const rounds = state?.league?.rounds ?? 0;
+  if (!teamCount || !rounds) return null;
+
+  const slot = round % 2 === 1 ? teamIndex + 1 : teamCount - teamIndex;
+  const from = (round - 1) * teamCount + slot + 1;
+
+  for (let overall = from; overall <= rounds * teamCount; overall++) {
+    const r = Math.floor((overall - 1) / teamCount) + 1;
+    const s = ((overall - 1) % teamCount) + 1;
+    const c = r % 2 === 1 ? s - 1 : teamCount - s;
+    if (!cellAt(r, c).name) return { round: r, teamIndex: c };
+  }
+  return null;
+}
+
+/* Bring a cell into view before the editor is anchored to it. `nearest` keeps
+   the board still when the cell is already on screen — advancing across a round
+   shouldn't make the whole grid jump — but a minimal scroll can leave the cell
+   tucked under the frozen top rail, which is opaque and would hide the row the
+   editor is pointing at. So: scroll the least amount, then push down by however
+   much of the cell the pinned header is covering. */
+function revealCell(td) {
+  td.scrollIntoView({ block: "nearest", inline: "nearest" });
+  const pinned = document.querySelector(".vf__pinned");
+  if (!pinned) return;
+  const under = pinned.getBoundingClientRect().bottom - td.getBoundingClientRect().top;
+  if (under > 0) window.scrollBy(0, -(under + 4));
+}
+
 function placeCellEditor() {
   if (!cellBox || !cellEdit) return;
   const td = el.gridBody.querySelector(
@@ -1384,6 +1432,12 @@ function openCell(round, teamIndex) {
   // Clicking the open cell again closes it, the way a toggle should.
   if (cellEdit && cellEdit.round === round && cellEdit.teamIndex === teamIndex) return closeCell();
   closeCell();
+
+  // Opening is usually a click, and a cell you clicked is already on screen.
+  // This is for the other route: commitCell advancing to the next pick, which
+  // can be a row further down than the one just typed.
+  const at = el.gridBody.querySelector(`[data-cell="${round}:${teamIndex}"]`);
+  if (at) revealCell(at);
 
   const team = state?.league?.teams[teamIndex] ?? "";
   const cur = cellAt(round, teamIndex);
@@ -1426,12 +1480,14 @@ function openCell(round, teamIndex) {
   cellCombo = attachCombobox(input, {
     getItems: pickCandidates,
     openOnFocus: false,
-    onCommit: (text) => commitCell(text, keep.checked),
+    onCommit: (text) => commitCell(text, keep.checked, { advance: true }),
   });
 
   cellBox.addEventListener("click", (e) => {
     const act = e.target.closest("[data-act]")?.dataset.act;
-    if (act === "save") commitCell(input.value, keep.checked);
+    if (act === "save") commitCell(input.value, keep.checked, { advance: true });
+    // Clearing is a correction, not a pick. Nothing moved forward, so neither
+    // does the cursor.
     if (act === "clear") commitCell("", false);
     if (act === "cancel") closeCell();
   });
@@ -1441,9 +1497,18 @@ function openCell(round, teamIndex) {
   input.select();
 }
 
-async function commitCell(name, keeper) {
+/* `advance` moves the editor to the next cell in draft order once the write
+   lands, and is how the board is typed through a live draft: click once into a
+   cell, type a name, enter to take the highlighted player, enter again to set
+   it — and the editor is already open on the next pick, focused and empty, so
+   the next name is just more typing. No mouse between picks.
+
+   The next cell is worked out BEFORE the write, because closeCell() clears
+   cellEdit and the await gives a re-render room to land in between. */
+async function commitCell(name, keeper, { advance = false } = {}) {
   if (!cellEdit) return;
   const { round, teamIndex } = cellEdit;
+  const next = advance ? nextCellInOrder(round, teamIndex) : null;
   closeCell();
   try {
     const out = await postBoard("cell", { round, teamIndex, name, keeper });
@@ -1465,7 +1530,14 @@ async function commitCell(name, keeper) {
         `${out.at.label} "${out.text}" — no match${out.suggestion ? `. did you mean ${out.suggestion}?` : ""}`
       );
     }
+    // Moves on whatever the matcher made of the name — an unmatched cell is
+    // still a slot that got used, and the echo above already says so. Stopping
+    // the run to nurse a typo would cost more picks than it saves; the cell is
+    // one click away for as long as the draft lasts.
+    if (next) openCell(next.round, next.teamIndex);
   } catch (err) {
+    // Nothing was written, so nothing advances — the cursor stays put and the
+    // error is the last thing said.
     echo("error", err.message);
   }
 }
