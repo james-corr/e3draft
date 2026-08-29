@@ -94,17 +94,27 @@ A mock draft is now just a draft: clear the board, run it, clear it again.
 how headless screenshots are taken — the live page never finishes loading, so capture hangs
 without it. `?view=`, `?exposure=`, `?focus=<player id>` and `?setup=1` deep-link any screen.
 
-**Always pass `--user-data-dir=<a temp dir>` when launching headless Brave, and kill it when
-you are done.** Without that flag headless attaches to James's real Brave profile and fights
-the browser he is actually using for it — new tabs stop opening and navigation dies, with no
-visible window to explain why. One orphan did exactly that for a day and a half (08/24/26).
-Check with `ps -eo pid,command | grep -i "Brave.*--headless"` before assuming the browser is
-broken.
+**Never launch a headless instance of James's Brave or Chrome.** Two instances of the same
+macOS browser bundle fight over shared system graphics/IPC (look for `CVDisplayLinkCreateWithCGDisplay
+failed` in the output), the headless one reliably hangs on this machine, and force-killing it
+leaves James's real browser — the one with the command center open — unable to open new tabs
+or navigate until he fully restarts it. A temp `--user-data-dir` isolates the profile but not
+the shared app-level singleton, so it does not prevent this. It has cost real time 3–4 times,
+last on 08/28/26. If the browser is already misbehaving, check for an orphan with
+`ps -eo pid,command | grep -iE "chrome|brave" | grep -- --headless`, kill it, and tell James to
+restart the browser.
 
-Headless Brave on macOS clamps windows to a 485px minimum, so `--window-size` cannot verify a
-narrow layout. Drive it over the DevTools protocol instead and call
-`Emulation.setDeviceMetricsOverride` — Node has a global `WebSocket`, so this needs no
-dependencies. Measure `documentElement.scrollWidth` against `clientWidth`, and confirm with an
-actual `window.scrollTo(9999, 0)`: `overflow-x: hidden` on `body` does not reliably clip when
-`html` is `visible`, and a bounding-box sweep alone will flag decorative elements that never
-scroll.
+Use the standalone Chromium that Playwright already installed instead — a separate binary with
+no desktop-app registration, zero conflict with Brave:
+`~/Library/Caches/ms-playwright/chromium_headless_shell-*/chrome-headless-shell-mac-arm64/chrome-headless-shell`
+(or `npx playwright screenshot …` — `playwright` is installed globally). Launch it with
+`--remote-debugging-port=<port>` and drive it over CDP with Node's global `WebSocket` — the
+browser-style API (`addEventListener` / `onmessage`), not the `ws` package's `.on()`. Kill it
+when done. It has no real window, so call `Emulation.setDeviceMetricsOverride` to size the
+viewport. To check for sideways scroll, measure `documentElement.scrollWidth` against
+`clientWidth` and confirm with an actual `window.scrollTo(9999, 0)`: `overflow-x: hidden` on
+`body` does not reliably clip when `html` is `visible`, and a bounding-box sweep alone will
+flag decorative elements that never scroll.
+
+If even the separate binary misbehaves, skip the screenshot — verify via logic plus an HTTP
+DOM dump and ask James to eyeball the visual.
