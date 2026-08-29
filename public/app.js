@@ -1215,8 +1215,17 @@ function renderGrid(s, { fromStream = false } = {}) {
         .filter(Boolean)
         .join(" ");
 
+      // Snake order for the visual column: odd rounds run left-to-right, even
+      // rounds right-to-left — the same math as gridToPicks and cellFor. An
+      // empty cell shows its own coordinates ("round.pick - overall", e.g.
+      // 2.01 - 13) so a freshly cleared board reads as the draft it is about
+      // to become rather than a blank sheet.
+      const slot = r % 2 === 1 ? c + 1 : teams.length - c;
+      const overall = (r - 1) * teams.length + slot;
+      const slotTag = `${r}.${String(slot).padStart(2, "0")} - ${overall}`;
+
       const body = !pick
-        ? ""
+        ? `<span class="grid__slot seg">${slotTag}</span>`
         : pick.unmatched
           ? `<span class="grid__name">${esc(pick.text)}</span>
              <span class="grid__pos">NO MATCH</span>`
@@ -1227,7 +1236,9 @@ function renderGrid(s, { fromStream = false } = {}) {
       // told apart only by a mark is a cell that can be misread in sun.
       const k = pick?.keeper ? `<span class="grid__k">K<span class="vh"> keeper</span></span>` : "";
 
-      const who = pick ? (pick.unmatched ? `${pick.text} — no match` : pick.player.name) : "empty";
+      const who = pick
+        ? (pick.unmatched ? `${pick.text} — no match` : pick.player.name)
+        : `empty (pick ${slotTag})`;
       const label = `Round ${r}, ${teams[c]}: ${who}. Click to set.`;
 
       // The badge is emitted BEFORE the name: floated, it then shares the first
