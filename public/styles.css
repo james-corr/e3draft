@@ -1551,6 +1551,17 @@ button {
   background: var(--scene-sunk);
 }
 
+/* An open cell states its own coordinates — round.pick then overall — so a
+   cleared board still reads as the draft ahead. Segment face at the same 11px
+   as the round-number row header, dim ink: clearly a placeholder, and a real
+   pick's name sits in the 13px UI face above it. */
+.grid__slot {
+  display: block;
+  font-size: 11px;
+  color: var(--ink-dim);
+  white-space: nowrap;
+}
+
 /* James's own column already carries the amber inset rule down the board; the
    word says the same thing again in the header, because a seat identified only
    by colour is a seat that can be misread in sun. */
