@@ -1068,6 +1068,37 @@ function renderLog(s) {
    and only names changed. */
 let teamsDraft = null;
 
+/* The keyboard cursor for arrow-key navigation of THE BOARD grid — { round,
+   teamIndex }, or null until the first arrow press. It outlives a stream
+   repaint: renderGrid re-homes DOM focus onto it, so a pick landing on someone
+   else's cell mid-navigation doesn't cost James his place. Clamped to the
+   board on every use, so a later TEAMS reorder can't strand it off-grid. */
+let gridCursor = null;
+
+function clampGridCursor(c) {
+  const rounds = state?.league?.rounds ?? 20;
+  const teamCount = state?.league?.teams?.length ?? 12;
+  return {
+    round: Math.min(rounds, Math.max(1, c.round)),
+    teamIndex: Math.min(teamCount - 1, Math.max(0, c.teamIndex)),
+  };
+}
+
+/* Put DOM focus on the cursor's cell. `scroll:false` — used after a stream
+   repaint — keeps the page still; a real arrow press scrolls the cell into
+   view under the pinned header, exactly as clicking one does. Returns the
+   button, or null when the cell isn't on the page (wrong view, TEAMS open). */
+function focusGridCursor({ scroll = true } = {}) {
+  if (!gridCursor) return null;
+  const btn = el.gridBody.querySelector(
+    `[data-cell="${gridCursor.round}:${gridCursor.teamIndex}"]`
+  );
+  if (!btn) return null;
+  btn.focus({ preventScroll: !scroll });
+  if (scroll) revealCell(btn.closest("td"));
+  return btn;
+}
+
 function teamHeader(name, i, myIndex) {
   const mine = i === myIndex;
   if (!teamsDraft) {
@@ -1253,11 +1284,25 @@ function renderGrid(s, { fromStream = false } = {}) {
   html += `</tbody>`;
   html += positionTally(s, teams, myIndex);
   html += `</table>`;
+
+  // Arrow-key navigation puts DOM focus on a cell button, and innerHTML wipes
+  // it. If a cell held the keyboard just before this repaint, restore it to the
+  // same cell afterward — without scrolling, since the repaint is most often
+  // someone else's pick landing, not James moving. A cell reached by Tab rather
+  // than by arrows has no cursor yet, so adopt its coordinates first.
+  const heldCell = document.activeElement?.closest?.("[data-cell]");
+  const cursorHeld = Boolean(heldCell) && el.gridBody.contains(heldCell);
+  if (cursorHeld && !gridCursor) {
+    const [r, ti] = heldCell.dataset.cell.split(":").map(Number);
+    gridCursor = { round: r, teamIndex: ti };
+  }
   el.gridBody.innerHTML = html;
 
   // The editor rides on document.body, so a re-render leaves it pointing at a
   // cell that no longer exists. Re-anchor it to the new one.
   placeCellEditor();
+
+  if (cursorHeld) focusGridCursor({ scroll: false });
 }
 
 /* ------------------------------------------------- what each team has taken */
@@ -1438,7 +1483,10 @@ function closeCell() {
   cellEdit = null;
 }
 
-function openCell(round, teamIndex) {
+/* `seed` overrides what the input opens with. The undo path passes "" so the
+   editor comes back empty on the cell it just cleared — ready to retype, and
+   not blocking the next Ctrl+Z with a stale name the way a prefill would. */
+function openCell(round, teamIndex, { seed } = {}) {
   if (!canEnterPicks) return echo("error", "the board is a read-only replay in this mode");
   // Clicking the open cell again closes it, the way a toggle should.
   if (cellEdit && cellEdit.round === round && cellEdit.teamIndex === teamIndex) return closeCell();
@@ -1476,7 +1524,7 @@ function openCell(round, teamIndex) {
 
   const input = cellBox.querySelector(".celled__input");
   const keep = cellBox.querySelector(".celled__keep input");
-  input.value = cur.name;
+  input.value = seed != null ? seed : cur.name;
 
   // The same type-ahead as the pick box: same ranking, same GONE badges, and
   // typing straight past the list is still allowed, because a name the matcher
@@ -2123,6 +2171,61 @@ document.addEventListener("keydown", (e) => {
   else if (k === "e") setExposure(el.body.dataset.exposure === "sun" ? "night" : "sun");
 });
 
+/* Arrow keys drive a cursor across THE BOARD grid: up/down step rounds,
+   left/right step managers, and it clamps at the edges rather than wrapping.
+   Only while the BOARD framing is up, no card or cell editor is open, and
+   TEAMS mode — which owns the header row — is closed. Enter and Space open the
+   focused cell with nothing extra wired: every cell is a real <button>, so
+   that is the browser's own behavior. */
+const GRID_STEP = {
+  ArrowUp: { round: -1, teamIndex: 0 },
+  ArrowDown: { round: 1, teamIndex: 0 },
+  ArrowLeft: { round: 0, teamIndex: -1 },
+  ArrowRight: { round: 0, teamIndex: 1 },
+};
+
+document.addEventListener("keydown", (e) => {
+  const step = GRID_STEP[e.key];
+  if (!step) return;
+  if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
+  if (el.body.dataset.view !== "grid") return;
+  if (teamsDraft || cellEdit || !el.focus.hidden || isSetupOpen()) return;
+  if (/^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
+  if (!state) return;
+
+  e.preventDefault();
+
+  // Is the cursor's own cell the thing with focus right now? If not — first
+  // press after arriving on the board, or focus was elsewhere — this press
+  // just shows the cursor (on the pick that's on the clock, if there is one)
+  // rather than also moving it.
+  const onCursor =
+    gridCursor &&
+    document.activeElement ===
+      el.gridBody.querySelector(
+        `[data-cell="${gridCursor.round}:${gridCursor.teamIndex}"]`
+      );
+
+  if (!onCursor) {
+    if (!gridCursor) {
+      const at = state.board.onTheClock;
+      gridCursor = clampGridCursor(
+        at
+          ? { round: at.round, teamIndex: at.teamIndex }
+          : { round: 1, teamIndex: 0 }
+      );
+    }
+    focusGridCursor();
+    return;
+  }
+
+  gridCursor = clampGridCursor({
+    round: gridCursor.round + step.round,
+    teamIndex: gridCursor.teamIndex + step.teamIndex,
+  });
+  focusGridCursor();
+});
+
 /* The setup overlay writes the same plan file the FIELD screen edits in place.
    Re-read on close so the two can't drift apart. */
 /* The setup editor renders the same five toggles but does not own them: the
@@ -2254,14 +2357,63 @@ function whereWentText(p) {
   return on ? `gone ${on.label} to ${on.team}` : "already on the board";
 }
 
-el.entryUndo.addEventListener("click", async () => {
-  try {
-    const out = await postBoard("undo");
-    echo("idle", `took back ${out.removed.label} "${out.removed.text}"`);
-  } catch (err) {
-    echo("error", err.message);
-  }
-  el.entryInput.focus();
+/* Take the last pick back off the board — the UNDO button, and Ctrl/Cmd+Z from
+   anywhere that isn't a live text edit. `undoPick` on the server always removes
+   the LAST filled cell in draft order, matched or not, so pressing again walks
+   the board back pick by pick: a typo and a wrong-but-valid pick come off the
+   same way.
+ *
+ * Calls are chained, never parallel. Mashing the key runs the undos in order
+ * rather than racing several reads of the same board — two reads that both see
+ * pick N as last would each blank N and leave N-1 standing, collapsing two
+ * presses into one removed pick.
+ *
+ * `from` says where the keystroke came from, so the cursor can follow the undo
+ * to the cell it cleared: the cell editor reopens there ready to retype, the
+ * grid cursor lands there, and the plain pick box just takes focus back. */
+let undoChain = Promise.resolve();
+
+function undoLastPick({ from = "entry" } = {}) {
+  if (!canEnterPicks) return Promise.resolve();
+  const run = undoChain.then(() => postBoard("undo"));
+  undoChain = run.catch(() => {});
+  return run
+    .then((out) => {
+      echo("idle", `took back ${out.removed.label} "${out.removed.text}"`);
+      const at = { round: out.removed.round, teamIndex: out.removed.teamIndex };
+      if (from === "cell") {
+        openCell(at.round, at.teamIndex, { seed: "" });
+      } else if (from === "grid") {
+        gridCursor = clampGridCursor(at);
+        focusGridCursor();
+      } else {
+        el.entryInput.focus();
+      }
+    })
+    .catch((err) => {
+      echo("error", err.message);
+      if (from === "entry") el.entryInput.focus();
+    });
+}
+
+el.entryUndo.addEventListener("click", () => undoLastPick({ from: "entry" }));
+
+/* Ctrl+Z / Cmd+Z is UNDO from the keyboard. Held back only when it would step
+   on a live text edit — a name half-typed into the pick box or the cell
+   editor, a note in the focus card — where Ctrl+Z means "undo my typing". An
+   empty field is not an edit in progress: that is the state right after a pick
+   lands or the cell editor advances, which is exactly when the hand reaches
+   for undo, so those still take the pick back. */
+document.addEventListener("keydown", (e) => {
+  if ((e.key !== "z" && e.key !== "Z") || !(e.ctrlKey || e.metaKey)) return;
+  if (e.shiftKey || e.altKey || e.repeat) return;
+  if (!canEnterPicks) return;
+  if (!el.focus.hidden || isSetupOpen()) return;
+  const t = e.target;
+  if (/^(INPUT|TEXTAREA)$/.test(t.tagName) && t.value.trim() !== "") return;
+  e.preventDefault();
+  const from = cellEdit ? "cell" : el.gridBody.contains(t) ? "grid" : "entry";
+  undoLastPick({ from });
 });
 
 /* ------------------------------------------------------------------ stream */

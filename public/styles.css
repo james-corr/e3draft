@@ -1602,6 +1602,14 @@ button {
   cursor: default;
 }
 
+/* The arrow-key navigation cursor. The global :focus-visible outline sits
+   outside the element, where the grid's own scroll box clips it at the top,
+   bottom and side edges — the cells James actually reaches for. Pulling it
+   inside the cell keeps the cursor whole on every square. */
+.cellbtn:focus-visible {
+  outline-offset: -2px;
+}
+
 /* The affordance is a rule down the leading edge rather than a fill: the
    column tint already means "mine" and the empty tint already means "open",
    and a hover that repainted either would be saying something it doesn't mean. */

@@ -1,5 +1,5 @@
 ---
-Date last edited: 08_23_26
+Date last edited: 08_28_26
 Date created: 08_13_26
 ---
 
@@ -71,6 +71,14 @@ rounds, and the IDP slots are `D` + `DB`.** Only the keeper round cost is still 
 - **`data/league.json` now carries the machine-readable copy** in its `rosterSlots` and
   `scoring` fields, filled from `SCORING.md`. Nothing in `lib/` reads `scoring` yet — it is
   there so a projection or value column has one place to come from.
+
+**Added 08/28/26 — the board takes the keyboard.** Two draft-day input changes, client-only:
+- **Arrow keys navigate THE BOARD grid** — up/down step rounds, left/right step managers, the
+  cursor clamps at the edges, and `Enter` opens the cell you land on. The cursor survives a
+  stream repaint so a leaguemate's pick landing mid-navigation doesn't lose your place.
+- **Ctrl/Cmd+Z is UNDO from anywhere** you're not mid-typing a name — the same call as the
+  UNDO button, so pressing again walks the board back pick by pick and a typo comes off like
+  any other pick. Undo from inside the board cell editor reopens that cell empty to retype.
 
 **Nothing left to connect.** The app is self-contained: picks go to `data/board.<season>.json`
 and `"source": "local"` replays `data/board.local.json`, the complete 2025 draft, as a
