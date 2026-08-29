@@ -28,6 +28,8 @@ stops it), same as before.
 |---|---|
 | `1` / `2` / `3` | Frame wide (the 20×12 board), field (the working view), or tight (your targets) |
 | `E` | Switch exposure between SUN and NIGHT |
+| `←` `→` `↑` `↓` | On the BOARD framing: move a cursor across the grid — left/right between managers, up/down between rounds. The first press lands on whoever's on the clock. `Enter` opens the cell you're on. |
+| `Ctrl` / `Cmd` + `Z` | Take the last pick back off the board. Keep pressing to walk it back pick by pick. Works whether the pick matched a player or was a typo. |
 | `Esc` | Close whichever card is open |
 
 SUN is the default because the draft happens outdoors on a laptop in bright daylight. NIGHT is
@@ -130,7 +132,10 @@ tells you who is on the clock so you always know whose pick you're typing.
 - A name it cannot place is still recorded, and shows up as an unmatched pick under CHECK
   SHEET. It is never rejected — a refused pick is a pick you think you made and didn't.
 - A player entered twice is also recorded, but the echo says loudly where he already went.
-- **UNDO** takes back the last pick.
+- **UNDO** — or `Ctrl`/`Cmd` + `Z` from anywhere you're not mid-typing a name — takes back the
+  last pick. Press it again and the one before that comes off, and so on back up the board. A
+  typo comes off exactly the same way a good pick does. If you're typing into a board cell when
+  you undo, that cell reopens empty and ready to retype.
 
 **The take button** on any row in ON THE BOARD — the small record mark on the right of the
 row. One click marks that player drafted at whatever pick is next. No confirmation: UNDO is
@@ -140,8 +145,14 @@ Picks are written to `data/board.<season>.json`.
 
 ## The BOARD screen
 
+The grid navigates by arrow key — left/right between managers, up/down between rounds, the
+cursor clamping at the edges. The first arrow press lands on whoever is on the clock; `Enter`
+opens the cell you're on, the same as clicking it. Mouse and keys do the same thing, so use
+whichever your hand is already on.
+
 **TEAMS** turns the header row into fields. Rename anyone, use ◀ ▶ to change the draft order,
-and **YOU** marks which column is yours. Nothing is written until SAVE.
+and **YOU** marks which column is yours. Nothing is written until SAVE. (Arrow-key navigation
+steps aside while TEAMS is open — the header keys are yours to type in.)
 
 Reordering moves each team's picks with them — a manager keeps everyone they've already taken
 and only their place in the snake changes. If there are picks on the board it asks first,

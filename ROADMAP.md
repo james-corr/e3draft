@@ -34,6 +34,21 @@ stopping at round 18, not a defect). The IDP slots were the real bug and `MY TEA
 
 ## Shipped
 
+- **The board takes the keyboard** (08/28/26): two things, both on `public/app.js`.
+  - **Arrow keys navigate THE BOARD grid** — up/down step rounds, left/right step managers,
+    the cursor clamps at the edges. The first press lands on the cell that's on the clock;
+    `Enter` opens it, since every cell is already a real `<button>`. The cursor survives a
+    stream repaint — `renderGrid` re-homes DOM focus onto it — so someone else's pick landing
+    mid-navigation doesn't lose James's place. Off while TEAMS mode owns the header, or a card
+    or the cell editor is open.
+  - **Ctrl/Cmd+Z is UNDO from anywhere** — same server call as the UNDO button
+    (`picks.undoPick`, which always removes the last filled cell in draft order), so pressing
+    again walks the board back pick by pick, and a typo comes off the same as a matched pick.
+    Calls are chained, not parallel, so mashing the key can't race two board reads into one
+    removed pick. Held back only mid-edit in a non-empty text field, where Ctrl+Z means "undo
+    my typing". When the undo is triggered from inside the board cell editor, that cell reopens
+    empty and ready to retype.
+
 - **TARGET is a full stat table, not compact rows** (08/26/26): every card stat — PROS RK, PROS
   TIER, POS RK, BYE, FFB TIER, FFB ADP, FFB POS, RISK, UPSIDE, ECR±ADP — is now its own column,
   one player per row, still split under STILL ON THE BOARD and GONE. TARGET only ever holds locked
