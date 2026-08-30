@@ -1313,6 +1313,10 @@ function renderGrid(s, { fromStream = false } = {}) {
    separate column reads. Counting down a column works too, and is how you read
    one manager's shape.
 
+   The row header carries an ALL total — every QB drafted league-wide, every RB,
+   and so on — so the other question ("how thin is this position getting?") is
+   one number rather than a mental sum across twelve cells.
+
    Counts come off `rosters[].counts`, which lib/state.js already builds from
    the resolved picks, so keepers are in it the moment they are typed and an
    unmatched cell is deliberately out of it — a name the matcher couldn't place
@@ -1345,18 +1349,21 @@ function positionTally(s, teams, myIndex) {
   });
 
   let html = `<tfoot class="grid__tally"><tr class="grid__tally-head">
-    <th scope="row">POS</th>
+    <th scope="row">ALL</th>
     <td colspan="${teams.length}">DRAFTED BY EACH TEAM</td>
   </tr>`;
 
   for (const row of TALLY_ROWS) {
-    html += `<tr><th scope="row">${row.label}</th>`;
+    let cells = "";
+    let leagueN = 0;
+
     for (let c = 0; c < teams.length; c++) {
       const byPos = counts[c];
       const n =
         row.key === "IDP"
           ? idp.reduce((sum, pos) => sum + (byPos[pos] || 0), 0)
           : byPos[row.key] || 0;
+      leagueN += n;
 
       // A zero is information — "nobody here has a tight end yet" is the whole
       // point — but twelve columns of it early on would drown the numbers that
@@ -1375,10 +1382,20 @@ function positionTally(s, teams, myIndex) {
 
       const title = detail ? ` title="${esc(detail)}"` : "";
       const label = `${teams[c]}: ${n} ${row.label}${detail ? ` — ${detail}` : ""}`;
-      html += `<td class="${cls}"${title}><span class="vh">${esc(label)}</span>
+      cells += `<td class="${cls}"${title}><span class="vh">${esc(label)}</span>
         <span class="grid__tally-n" aria-hidden="true">${n}</span></td>`;
     }
-    html += `</tr>`;
+
+    // The row header carries the league-wide total beside the position name:
+    // the twelve cells answer "who still needs one before I'm up again", this
+    // answers "how many are already off the board". A zero total goes as quiet
+    // as the zero cells across the row, for the same reason.
+    const totCls = leagueN ? "grid__tally-tot" : "grid__tally-tot is-zero";
+    html += `<tr><th scope="row">
+      <span class="vh">${esc(row.label)} — ${leagueN} drafted across the league</span>
+      <span class="grid__tally-pos" aria-hidden="true">${row.label}</span>
+      <span class="${totCls}" aria-hidden="true">${leagueN}</span>
+    </th>${cells}</tr>`;
   }
 
   return `${html}</tfoot>`;

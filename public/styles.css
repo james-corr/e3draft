@@ -1695,6 +1695,28 @@ button {
   letter-spacing: 0.08em;
   color: var(--ink-dim);
   text-align: left;
+  white-space: nowrap;
+}
+
+/* The row header carries two things now: the position group as a dim label,
+   and the league-wide total drafted at it. The total is solid ink and a size
+   up — it's a number James reads off the board, not a caption. */
+.grid__tally-pos {
+  margin-right: 6px;
+}
+
+.grid__tally-tot {
+  font-size: 12px;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* A zero total goes as quiet as the zero cells across its row, and for the
+   same reason — still the answer, just not one that has moved yet. */
+.grid__tally-tot.is-zero {
+  font-weight: 500;
+  color: var(--ink-dim);
+  opacity: 0.55;
 }
 
 /* Counted up from the bottom row, which sits at 0. */
