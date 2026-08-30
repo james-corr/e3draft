@@ -34,6 +34,13 @@ stopping at round 18, not a defect). The IDP slots were the real bug and `MY TEA
 
 ## Shipped
 
+- **Both ranking sources refreshed** (08/30/26): `npm run refresh` re-pulled FantasyPros and
+  the Fantasy Footballers UDK against live data. `data/players.2026.json` is now 1117 players
+  (was 1069), through the same validation gate. Nick Chubb (unsigned free agent), Jayden
+  Higgins and Minkah Fitzpatrick fell out of both upstream lists since the 08/20 pull; on the
+  2025 replay they surface as unmatched (210/216 matched, the other 6 loud, none silent). No
+  code change — this is the routine refresh the ingest tooling exists for.
+
 - **The board takes the keyboard** (08/28/26): two things, both on `public/app.js`.
   - **Arrow keys navigate THE BOARD grid** — up/down step rounds, left/right step managers,
     the cursor clamps at the edges. The first press lands on the cell that's on the clock;

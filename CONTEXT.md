@@ -1,5 +1,5 @@
 ---
-Date last edited: 08_28_26
+Date last edited: 08_30_26
 Date created: 08_13_26
 ---
 
@@ -79,6 +79,14 @@ rounds, and the IDP slots are `D` + `DB`.** Only the keeper round cost is still 
 - **Ctrl/Cmd+Z is UNDO from anywhere** you're not mid-typing a name — the same call as the
   UNDO button, so pressing again walks the board back pick by pick and a typo comes off like
   any other pick. Undo from inside the board cell editor reopens that cell empty to retype.
+
+**Refreshed 08/30/26 — both ranking sources re-pulled.** `npm run refresh` against live
+FantasyPros (half-PPR draft board, updated 8/29–8/30) and the Fantasy Footballers UDK (HALF
+6pt QB, 12-team). `data/players.2026.json` now holds **1117 players**, up from 1069; the
+validation gate passed and no code changed. Three players the 2025 replay board names dropped
+out of both upstream lists and now surface as unmatched rather than resolving to nobody: Nick
+Chubb (still an unsigned free agent), Jayden Higgins, and Minkah Fitzpatrick (FantasyPros
+trimmed its thin 9-expert IDP consensus). Replay: 210/216 matched, the other 6 loud.
 
 **Nothing left to connect.** The app is self-contained: picks go to `data/board.<season>.json`
 and `"source": "local"` replays `data/board.local.json`, the complete 2025 draft, as a
